@@ -1,23 +1,38 @@
 package org.tahomarobotics.robot;
 
+import edu.wpi.first.epilogue.Epilogue;
+import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.epilogue.NotLogged;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.elevator.Elevator;
 import org.tahomarobotics.robot.util.SubsystemIF;
 
-import java.util.ArrayList;
 import java.util.List;
 
+@Logged
 public class Robot extends TimedRobot {
-    private final List<SubsystemIF> subsystems = new ArrayList<>();
+    // Subsystems
+
+    @Logged(name = "OI")
+    private final OI oi = OI.getInstance();
+    @Logged(name = "Chassis")
+    private final Chassis chassis = Chassis.getInstance();
+    @Logged(name = "Elevator")
+    private final Elevator elevator = Elevator.getInstance();
+
+    @NotLogged
+    private final List<SubsystemIF> subsystems = List.of(
+            oi.initialize(),
+            chassis.initialize(),
+            elevator.initialize()
+    );
 
     // Robot
 
     public Robot() {
-        subsystems.add(OI.getInstance().initialize());
-        subsystems.add(Chassis.getInstance().initialize());
-        subsystems.add(Elevator.getInstance().initialize());
+        Epilogue.bind(this);
     }
 
     @Override
@@ -66,9 +81,6 @@ public class Robot extends TimedRobot {
     public void testPeriodic() {}
 
     // Simulation
-
-    @Override
-    public void simulationInit() {}
 
     @Override
     public void simulationPeriodic() {}

@@ -89,4 +89,9 @@ public class CalibrationData<T extends Serializable> {
         String tmp = Arrays.deepToString(data).substring(1);
         return tmp.substring(0, tmp.length() - 1);
     }
+
+    @Override
+    public String toString() {
+        return formatData();
+    }
 }

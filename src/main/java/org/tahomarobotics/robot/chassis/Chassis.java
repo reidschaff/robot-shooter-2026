@@ -4,6 +4,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -20,8 +21,6 @@ import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.chassis.commands.AlignSwerveCommand;
@@ -32,27 +31,45 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Chassis extends SubsystemIF {
-    private static final Logger logger = LoggerFactory.getLogger(Chassis.class);
-
     private static final Chassis INSTANCE = new Chassis();
+
+    @Logged(name = "modules/frontLeft")
+    private final SwerveModule frontLeft;
+    @Logged(name = "modules/frontRight")
+    private final SwerveModule frontRight;
+    @Logged(name = "modules/backLeft")
+    private final SwerveModule backLeft;
+    @Logged(name = "modules/backRight")
+    private final SwerveModule backRight;
 
     private final List<SwerveModule> modules;
 
     private final Pigeon2 pigeon = new Pigeon2(RobotMap.PIGEON, RobotConfiguration.CANBUS_NAME);
+
     private final StatusSignal<Angle> yaw = pigeon.getYaw();
     private final StatusSignal<AngularVelocity> yawVelocity = pigeon.getAngularVelocityZWorld();
 
+    @Logged
     public record ValidYaw(Rotation2d yaw, boolean valid) {}
 
+    @Logged
     private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
 
+    @Logged
     private final CalibrationData<Double[]> swerveCalibration;
+
     private final SwerveDriveKinematics kinematics;
     private final SwerveDrivePoseEstimator poseEstimator;
+
     private final Field2d fieldPose = new Field2d();
+
     private final Thread odometryThread;
+    @Logged
     private boolean isFieldCentric = true;
+
+    @Logged
     private Rotation2d heading = new Rotation2d();
     private SwerveModulePosition[] lastModulePosition;
 
@@ -64,12 +81,11 @@ public class Chassis extends SubsystemIF {
 
         // Use calibration to make modules
         Double[] angularOffsets = swerveCalibration.get();
-        modules = List.of(
-                new SwerveModule(RobotMap.FRONT_LEFT_MOD, angularOffsets[0]),
-                new SwerveModule(RobotMap.FRONT_RIGHT_MOD, angularOffsets[1]),
-                new SwerveModule(RobotMap.BACK_LEFT_MOD, angularOffsets[2]),
-                new SwerveModule(RobotMap.BACK_RIGHT_MOD, angularOffsets[3])
-        );
+        frontLeft = new SwerveModule(RobotMap.FRONT_LEFT_MOD, angularOffsets[0]);
+        frontRight = new SwerveModule(RobotMap.FRONT_RIGHT_MOD, angularOffsets[1]);
+        backLeft = new SwerveModule(RobotMap.BACK_LEFT_MOD, angularOffsets[2]);
+        backRight = new SwerveModule(RobotMap.BACK_RIGHT_MOD, angularOffsets[3]);
+        modules = List.of(frontLeft, frontRight, backLeft, backRight);
 
         kinematics = new SwerveDriveKinematics(
                 modules.stream()
@@ -159,8 +175,11 @@ public class Chassis extends SubsystemIF {
 
     // GETTERS
 
+    @Logged(name = "pose2d")
     public Pose2d getPose() {
-        return poseEstimator.getEstimatedPosition();
+        synchronized (poseEstimator) {
+            return poseEstimator.getEstimatedPosition();
+        }
     }
 
     public SwerveModulePosition[] getSwerveModulePositions() {
@@ -171,6 +190,7 @@ public class Chassis extends SubsystemIF {
         return modules.stream().map(SwerveModule::getState).toArray(SwerveModuleState[]::new);
     }
 
+    @Logged(name = "yaw")
     public ValidYaw getYaw() {
         boolean valid = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
         return new ValidYaw(Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValueAsDouble(yaw, yawVelocity)), valid);

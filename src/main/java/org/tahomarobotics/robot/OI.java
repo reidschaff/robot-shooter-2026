@@ -1,6 +1,8 @@
 package org.tahomarobotics.robot;
 
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -11,6 +13,7 @@ import org.tahomarobotics.robot.elevator.commands.ElevatorDefaultCommand;
 import org.tahomarobotics.robot.elevator.commands.ElevatorMoveCommand;
 import org.tahomarobotics.robot.util.SubsystemIF;
 
+@Logged(strategy = Logged.Strategy.OPT_IN)
 public class OI extends SubsystemIF {
     private static final OI INSTANCE = new OI();
 
@@ -27,8 +30,10 @@ public class OI extends SubsystemIF {
 
     // Initialization
 
-    public OI() {
+    private OI() {
         CommandScheduler.getInstance().unregisterSubsystem(this);
+        DriverStation.silenceJoystickConnectionWarning(true);
+
         configureBindings();
         setDefaultCommands();
     }
@@ -49,11 +54,26 @@ public class OI extends SubsystemIF {
 
     public void setDefaultCommands() {
         chassis.setDefaultCommand(new TeleopDriveCommand(
-                () -> -desensitizePowerBased(driveController.getLeftY(), TRANSLATIONAL_SENSITIVITY),
-                () -> -desensitizePowerBased(driveController.getLeftX(), TRANSLATIONAL_SENSITIVITY),
-                () -> -desensitizePowerBased(driveController.getRightX(), ROTATIONAL_SENSITIVITY)
+                this::getDriveLeftX, this::getDriveLeftY, this::getDriveRightX
         ));
         elevator.setDefaultCommand(new ElevatorDefaultCommand(() -> MathUtil.applyDeadband(manipController.getLeftY(), DEADBAND)));
+    }
+
+    // Inputs
+
+    @Logged(name = "Controllers/Drive/LeftX")
+    public double getDriveLeftX() {
+        return -desensitizePowerBased(driveController.getLeftX(), TRANSLATIONAL_SENSITIVITY);
+    }
+
+    @Logged(name = "Controllers/Drive/LeftY")
+    public double getDriveLeftY() {
+        return -desensitizePowerBased(driveController.getLeftY(), TRANSLATIONAL_SENSITIVITY);
+    }
+
+    @Logged(name = "Controllers/Drive/RightX")
+    public double getDriveRightX() {
+        return -desensitizePowerBased(driveController.getRightX(), ROTATIONAL_SENSITIVITY);
     }
 
     // Helper Methods

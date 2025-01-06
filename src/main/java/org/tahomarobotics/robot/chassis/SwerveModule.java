@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -26,17 +27,20 @@ import java.util.List;
 
 import static org.tahomarobotics.robot.chassis.ChassisConstants.*;
 
+@Logged(strategy = Logged.Strategy.OPT_IN)
 public class SwerveModule {
     private static final Logger logger = LoggerFactory.getLogger(SwerveModule.class);
 
     private final String name;
     private final Translation2d translationOffset;
+    @Logged
     private double angularOffset;
 
     private final TalonFX driveMotor;
     private final TalonFX steerMotor;
     private final CANcoder steerEncoder;
 
+    @Logged
     private SwerveModuleState targetState = new SwerveModuleState();
 
     private final StatusSignal<Angle> steerPosition;
@@ -44,8 +48,7 @@ public class SwerveModule {
     private final StatusSignal<Angle> drivePosition;
     private final StatusSignal<AngularVelocity> driveVelocity;
     private final StatusSignal<AngularAcceleration> driveAcceleration;
-    private final StatusSignal<Current> driveCurrent;
-    private final StatusSignal<Current> steerCurrent;
+    private final StatusSignal<Current> driveCurrent, steerCurrent;
 
     private final VelocityVoltage driveMotorVelocity = new VelocityVoltage(0.0).withEnableFOC(RobotConfiguration.CANIVORE_PHOENIX_PRO);
     private final PositionDutyCycle steerMotorPosition = new PositionDutyCycle(0.0).withEnableFOC(RobotConfiguration.CANIVORE_PHOENIX_PRO);
@@ -116,20 +119,33 @@ public class SwerveModule {
         return new SwerveModulePosition(getDrivePosition(), Rotation2d.fromRotations(getSteerAngle()));
     }
 
+    @Logged(name = "steerAngle")
     public double getSteerAngle() {
         return BaseStatusSignal.getLatencyCompensatedValueAsDouble(steerPosition, steerVelocity);
     }
 
+    @Logged(name = "drivePosition")
     public double getDrivePosition() {
         return BaseStatusSignal.getLatencyCompensatedValueAsDouble(drivePosition, driveVelocity) * DRIVE_POSITION_COEFFICIENT;
     }
 
+    @Logged(name = "driveVelocity")
     public double getDriveVelocity() {
         return driveVelocity.getValueAsDouble() * DRIVE_POSITION_COEFFICIENT;
     }
 
     public SwerveModuleState getState() {
         return new SwerveModuleState(getDriveVelocity(), Rotation2d.fromRotations(getSteerAngle()));
+    }
+
+    @Logged(name = "driveCurrent")
+    public double getDriveCurrent() {
+        return driveCurrent.getValueAsDouble();
+    }
+
+    @Logged(name = "steerCurrent")
+    public double getSteerCurrent() {
+        return steerCurrent.getValueAsDouble();
     }
 
     public void setDesiredState(SwerveModuleState state) {

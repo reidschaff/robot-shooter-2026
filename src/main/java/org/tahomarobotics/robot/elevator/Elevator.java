@@ -3,7 +3,9 @@ package org.tahomarobotics.robot.elevator;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -23,10 +25,12 @@ import org.tahomarobotics.robot.util.SysIdTest;
 
 import static org.tahomarobotics.robot.elevator.ElevatorConstants.*;
 
+@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Elevator extends SubsystemIF {
 
     public static final Logger logger = LoggerFactory.getLogger(Elevator.class);
     private static final Elevator INSTANCE = new Elevator();
+    @Logged
     private double targetHeight;
     private final MotionMagicVoltage positionControl = new MotionMagicVoltage(0.0).withEnableFOC(RobotConfiguration.RIO_PHOENIX_PRO);
     TalonFX elevatorRight;
@@ -59,7 +63,7 @@ public class Elevator extends SubsystemIF {
 
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY, elevatorCurrent, motorPosition, elevatorVelocity);
 
-//        ParentDevice.optimizeBusUtilizationForAll(elevatorRight, elevatorLeft);
+        ParentDevice.optimizeBusUtilizationForAll(elevatorRight, elevatorLeft);
 
     }
 
@@ -73,6 +77,7 @@ public class Elevator extends SubsystemIF {
         LOW
     }
 
+    @Logged(name = "height")
     public double getElevatorHeight() {
         return motorPosition.getValueAsDouble();
     }
@@ -90,10 +95,12 @@ public class Elevator extends SubsystemIF {
         elevatorRight.setControl(positionControl.withPosition(targetHeight));
     }
 
+    @Logged
     public boolean isAtPosition() {
         return Math.abs(targetHeight - getElevatorHeight()) <= ElevatorConstants.POSITION_TOLERANCE;
     }
 
+    @Logged
     public boolean isMoving() {
         return Math.abs(elevatorVelocity.refresh().getValueAsDouble()) > VELOCITY_TOLERANCE;
     }
@@ -106,16 +113,6 @@ public class Elevator extends SubsystemIF {
 
     public void stop() {
         elevatorRight.stopMotor();
-    }
-
-    @Override
-    public double getEnergyUsed() {
-        return 0;
-    }
-
-    @Override
-    public double getTotalCurrent() {
-        return 0;
     }
 
     @Override
