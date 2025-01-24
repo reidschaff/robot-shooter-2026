@@ -1,127 +1,167 @@
 package org.tahomarobotics.robot.util;
 
 import com.ctre.phoenix6.StatusCode;
-import com.ctre.phoenix6.configs.MagnetSensorConfigs;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.tinylog.Logger;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class RobustConfigurator {
-
+    /**
+     * Number of configuration attempts.
+     */
     private static final int RETRIES = 5;
-    private final Logger logger;
 
-    private String detail;
+    // Retrying Configurator
 
-    public static StatusCode retryConfigurator(Supplier<StatusCode> func, String succeed, String fail, String retry) {
-        final Logger logger = LoggerFactory.getLogger(RobustConfigurator.class);
-
-        return retryConfigurator(logger, func, succeed, fail, retry);
-    }
-
-    public static StatusCode retryConfigurator(Logger logger, Supplier<StatusCode> func, String succeed, String fail, String retry) {
-        boolean success = false;
-        StatusCode statusCode = null;
+    /**
+     * Attempts to run the configuration function until success or RETRIES.
+     *
+     * @param specifier Specifier for the device(s)
+     * @param config    Configuration function
+     *
+     * @return Resulting status code
+     */
+    @SuppressWarnings("SameParameterValue")
+    private static StatusCode tryConfigure(String specifier, Supplier<StatusCode> config) {
+        StatusCode statusCode = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < RETRIES; i++) {
-            statusCode = func.get();
-            if (statusCode == StatusCode.OK) {
-                success = true;
+            statusCode = config.get();
+            if (statusCode.isOK()) {
+                Logger.info("Successfully configured {} in {} attempt{}!", specifier, i + 1, i == 0 ? "" : "s");
                 break;
+            } else if (statusCode.isWarning()) {
+                Logger.warn("[{}/{}] Configuring {} returned warning status code: {}, retrying...", i + 1, specifier, statusCode);
+            } else {
+                Logger.error("[{}/{}] Configuring {} returned error status code: {}, retrying...", i + 1, specifier, statusCode);
             }
-            logger.warn(retry);
         }
-        if (success) {
-            logger.info(succeed);
-        } else {
-            logger.error(fail);
-        }
-
         return statusCode;
     }
 
-    private void retryMotorConfigurator(Supplier<StatusCode> func) {
-        retryConfigurator(logger, func,
-            "Successful motor configuration" + detail,
-            "Failed motor configuration" + detail,
-            "Retrying failed motor configuration" + detail
-        );
+    // Device Configurators
+
+    /**
+     * Attempts to configure a TalonFX.
+     *
+     * @param deviceName    Name of the device
+     * @param motor         The motor
+     * @param configuration Configuration to apply
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryConfigureTalonFX(String deviceName, TalonFX motor, TalonFXConfiguration configuration) {
+        return tryConfigure("TalonFX '" + deviceName + "'", () -> motor.getConfigurator().apply(configuration));
     }
 
-    public RobustConfigurator(Logger logger) {
-        this.logger = logger;
-        this.detail = "";
+    /**
+     * Attempts to configure a TalonFX with a follower.
+     *
+     * @param deviceName          Name of the device
+     * @param motor               The motor
+     * @param follower            The follower motor
+     * @param configuration       Configuration to apply
+     * @param isOppositeDirection Whether the follower should turn the opposite direction
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryConfigureTalonFXWithFollower(String deviceName, TalonFX motor, TalonFX follower, TalonFXConfiguration configuration, boolean isOppositeDirection) {
+        follower.setControl(new Follower(motor.getDeviceID(), isOppositeDirection));
+        return tryConfigure("TalonFX '" + deviceName + "'", () -> motor.getConfigurator().apply(configuration));
     }
 
-    public RobustConfigurator(Logger logger, String name) {
-        this.logger = logger;
-        this.detail = " for " + name;
+    /**
+     * Attempts to configure a TalonFX with a follower.
+     *
+     * @param deviceName    Name of the device
+     * @param motor         The motor
+     * @param follower      The follower motor
+     * @param configuration Configuration to apply
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryConfigureTalonFXWithFollower(String deviceName, TalonFX motor, TalonFX follower, TalonFXConfiguration configuration) {
+        return tryConfigureTalonFXWithFollower(deviceName, motor, follower, configuration, false);
     }
 
-    public void configureTalonFX(TalonFX motor, TalonFXConfiguration configuration) {
-        var configurator = motor.getConfigurator();
-        retryMotorConfigurator(() -> configurator.apply(configuration));
+    /**
+     * Attempts to modify the configuration of a TalonFX.
+     *
+     * @param deviceName   Name of the device
+     * @param motor        The motor
+     * @param modification Modification to apply
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryModifyTalonFX(String deviceName, TalonFX motor, Consumer<TalonFXConfiguration> modification) {
+        var config = new TalonFXConfiguration();
+        motor.getConfigurator().refresh(config);
+        modification.accept(config);
+
+        return tryConfigureTalonFX(deviceName, motor, config);
     }
 
-    public void configureTalonFX(TalonFX motor, TalonFXConfiguration configuration, String device) {
-        var configurator = motor.getConfigurator();
-        this.detail = " for " + device;
-        retryMotorConfigurator(() -> configurator.apply(configuration));
+    /**
+     * Attempts to configure a CANcoder.
+     *
+     * @param deviceName    Name of the device
+     * @param encoder       The encoder
+     * @param configuration Configuration to apply
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryConfigureCANcoder(String deviceName, CANcoder encoder, CANcoderConfiguration configuration) {
+        return tryConfigure("CANcoder '" + deviceName + "'", () -> encoder.getConfigurator().apply(configuration));
     }
 
-    public void configureTalonFX(TalonFX motor, TalonFXConfiguration configuration, int encoderId) {
-        configuration.Feedback.FeedbackRemoteSensorID = encoderId;
-        configureTalonFX(motor, configuration);
+    /**
+     * Attempts to modify the configuration of a CANcoder.
+     *
+     * @param deviceName   Name of the device
+     * @param encoder      The encoder
+     * @param modification Modification to apply
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode tryModifyCANcoder(String deviceName, CANcoder encoder, Consumer<CANcoderConfiguration> modification) {
+        var config = new CANcoderConfiguration();
+        encoder.getConfigurator().refresh(config);
+        modification.accept(config);
+
+        return tryConfigureCANcoder(deviceName, encoder, config);
     }
 
-    public void configureTalonFX(TalonFX motor, TalonFXConfiguration configuration, int encoderId, String device) {
-        configuration.Feedback.FeedbackRemoteSensorID = encoderId;
-        this.detail = " for " + device;
-        configureTalonFX(motor, configuration);
+    // Helper Methods
+
+    /**
+     * Attempts to set the angular offset of a CANcoder.
+     *
+     * @param deviceName Name of the device
+     * @param encoder    The encoder
+     * @param offset     The new offset of the CANcoder in <strong>rotations</strong>
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode trySetCancoderAngularOffset(String deviceName, CANcoder encoder, double offset) {
+        return tryModifyCANcoder(deviceName, encoder, e -> e.MagnetSensor.MagnetOffset = offset);
     }
 
-    public void configureTalonFX(TalonFX motor, TalonFXConfiguration configuration, TalonFX motorFollower, boolean isOppositeMasterDirection) {
-        configureTalonFX(motor, configuration);
-        configureTalonFX(motorFollower, configuration);
-
-        motorFollower.setControl(new Follower(motor.getDeviceID(), isOppositeMasterDirection));
-    }
-
-    public void setMotorNeutralMode(TalonFX motor, NeutralModeValue mode) {
-        var configurator = motor.getConfigurator();
-        var configuration = new MotorOutputConfigs();
-        retryMotorConfigurator(() -> configurator.refresh(configuration));
-
-        configuration.withNeutralMode(mode);
-        retryMotorConfigurator(() -> configurator.apply(configuration));
-
-    }
-
-    public void configureCancoder(CANcoder encoder, MagnetSensorConfigs configuration, double angularOffset) {
-        configuration.withMagnetOffset(angularOffset);
-        var configurator = encoder.getConfigurator();
-        retryMotorConfigurator(() -> configurator.apply(configuration));
-    }
-
-    public void configureCancoder(CANcoder encoder, MagnetSensorConfigs configuration, double angularOffset, String device) {
-        configuration.withMagnetOffset(angularOffset);
-        this.detail = " for " + device;
-        var configurator = encoder.getConfigurator();
-        retryMotorConfigurator(() -> configurator.apply(configuration));
-    }
-
-    public void setCancoderAngularOffset(CANcoder encoder, double angularOffset) {
-        var configurator = encoder.getConfigurator();
-        var configuration = new MagnetSensorConfigs();
-        retryMotorConfigurator(() -> configurator.refresh(configuration));
-
-        configuration.withMagnetOffset(angularOffset);
-        retryMotorConfigurator(() -> configurator.apply(configuration));
+    /**
+     * Attempts to set the neutral mode of a TalonFX.
+     *
+     * @param deviceName Name of the device
+     * @param motor      The motor
+     * @param mode       The new neutral mode
+     *
+     * @return The resulting status code
+     */
+    public static StatusCode trySetMotorNeutralMode(String deviceName, TalonFX motor, NeutralModeValue mode) {
+        return tryModifyTalonFX(deviceName, motor, m -> m.MotorOutput.NeutralMode = mode);
     }
 }

@@ -13,8 +13,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Commands;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tahomarobotics.robot.Robot;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
@@ -27,8 +25,6 @@ import static org.tahomarobotics.robot.elevator.ElevatorConstants.*;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
 public class Elevator extends SubsystemIF {
-
-    public static final Logger logger = LoggerFactory.getLogger(Elevator.class);
     private static final Elevator INSTANCE = new Elevator();
     @Logged
     private double targetHeight;
@@ -48,12 +44,10 @@ public class Elevator extends SubsystemIF {
     }
 
     private Elevator() {
-        RobustConfigurator configurator = new RobustConfigurator(logger);
-
         elevatorRight = new TalonFX(RobotMap.ELEVATOR_RIGHT_MOTOR);
         elevatorLeft = new TalonFX(RobotMap.ELEVATOR_LEFT_MOTOR);
 
-        configurator.configureTalonFX(elevatorRight, elevatorConfig, elevatorLeft, false);
+        RobustConfigurator.tryConfigureTalonFXWithFollower("Elevator Right Motor", elevatorRight, elevatorLeft, elevatorConfig);
 
         sysIdTest = new SysIdTest(this, elevatorRight);
 
@@ -62,9 +56,7 @@ public class Elevator extends SubsystemIF {
         elevatorCurrent = elevatorRight.getStatorCurrent();
 
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY, elevatorCurrent, motorPosition, elevatorVelocity);
-
         ParentDevice.optimizeBusUtilizationForAll(elevatorRight, elevatorLeft);
-
     }
 
     public void zero() {

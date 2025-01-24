@@ -19,17 +19,13 @@
 package org.tahomarobotics.robot.util;
 
 import edu.wpi.first.wpilibj.Filesystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.tinylog.Logger;
 
 import java.io.*;
 import java.util.Arrays;
 
 @SuppressWarnings("unchecked")
 public class CalibrationData<T extends Serializable> {
-
-    private final static Logger logger = LoggerFactory.getLogger(CalibrationData.class);
-
     private static final File HOME_DIR = Filesystem.getOperatingDirectory();
 
     private final File file;
@@ -51,18 +47,18 @@ public class CalibrationData<T extends Serializable> {
     private void readCalibrationFile() {
         try (ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(file))) {
             data = castData((T) inputStream.readObject());
-            logger.info("Successfully read calibration data <" + file.getAbsolutePath() + "> -> " + formatData());
+            Logger.info("Successfully read calibration data <{}> -> {}", file.getAbsolutePath(), formatData());
         } catch (Exception e) {
-            logger.error("Failed to read calibration data <" + file.getAbsolutePath() + ">");
+            Logger.error(e, "Failed to read calibration data <{}>", file.getAbsolutePath());
         }
     }
 
     private void writeCalibrationFile(T[] data) {
         try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(file))) {
             outputStream.writeObject(data[0]);
-            logger.warn("Wrote new calibration data <" + file.getAbsolutePath() + "> -> " + formatData());
+            Logger.warn("Wrote new calibration data <{}> -> {}", file.getAbsolutePath(), formatData());
         } catch (Exception e) {
-            logger.error("Failed to write calibration data <" + file.getAbsolutePath() + ">", e);
+            Logger.error(e, "Failed to write calibration data <{}>", file.getAbsolutePath());
         }
     }
 

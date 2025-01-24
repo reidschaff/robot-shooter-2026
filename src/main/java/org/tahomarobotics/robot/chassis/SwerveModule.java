@@ -26,8 +26,6 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.RobustConfigurator;
@@ -39,8 +37,6 @@ import static org.tahomarobotics.robot.chassis.ChassisConstants.*;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
 public class SwerveModule {
-    private static final Logger logger = LoggerFactory.getLogger(SwerveModule.class);
-
     // Identifiers
 
     private final String name;
@@ -71,16 +67,14 @@ public class SwerveModule {
 
     // Control Requests
 
-    private final VelocityVoltage driveMotorVelocity = new VelocityVoltage(0.0).withEnableFOC(RobotConfiguration.CANIVORE_PHOENIX_PRO);
-    private final PositionDutyCycle steerMotorPosition = new PositionDutyCycle(0.0).withEnableFOC(RobotConfiguration.CANIVORE_PHOENIX_PRO);
-
-    private final RobustConfigurator configurator;
+    private final VelocityVoltage driveMotorVelocity = new VelocityVoltage(0.0).withEnableFOC(
+        RobotConfiguration.CANIVORE_PHOENIX_PRO);
+    private final PositionDutyCycle steerMotorPosition = new PositionDutyCycle(0.0).withEnableFOC(
+        RobotConfiguration.CANIVORE_PHOENIX_PRO);
 
     // Initialization
 
     public SwerveModule(RobotMap.SwerveModuleDescriptor descriptor, double angularOffset) {
-        configurator = new RobustConfigurator(logger);
-
         name = descriptor.moduleName();
         translationOffset = descriptor.offset();
         this.angularOffset = angularOffset;
@@ -89,9 +83,9 @@ public class SwerveModule {
         steerMotor = new TalonFX(descriptor.steerId(), RobotConfiguration.CANBUS_NAME);
         steerEncoder = new CANcoder(descriptor.encoderId(), RobotConfiguration.CANBUS_NAME);
 
-        configurator.configureTalonFX(driveMotor, driveMotorConfiguration, descriptor.moduleName() + " drive motor");
-        configurator.configureTalonFX(steerMotor, steerMotorConfiguration, descriptor.encoderId(), descriptor.moduleName() + " steer motor");
-        configurator.configureCancoder(steerEncoder, encoderConfiguration, angularOffset, descriptor.moduleName() + " encoder");
+        RobustConfigurator.tryConfigureTalonFX(name + " Drive Motor", driveMotor, driveMotorConfiguration);
+        RobustConfigurator.tryConfigureTalonFX(name + " Steer Motor", steerMotor, steerMotorConfiguration);
+        RobustConfigurator.tryConfigureCANcoder(name + " Encoder", steerEncoder, encoderConfiguration);
 
         drivePosition = driveMotor.getPosition();
         driveRotorPosition = driveMotor.getRotorPosition();
@@ -104,7 +98,8 @@ public class SwerveModule {
         driveCurrent = driveMotor.getSupplyCurrent();
         steerCurrent = steerMotor.getSupplyCurrent();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConfiguration.ODOMETRY_UPDATE_FREQUENCY,
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            RobotConfiguration.ODOMETRY_UPDATE_FREQUENCY,
             drivePosition,
             driveRotorPosition,
             driveVelocity,
@@ -119,19 +114,19 @@ public class SwerveModule {
     // Calibration
 
     public void initializeCalibration() {
-        configurator.setCancoderAngularOffset(steerEncoder, 0);
-        configurator.setMotorNeutralMode(steerMotor, NeutralModeValue.Coast);
+        RobustConfigurator.trySetCancoderAngularOffset(name + " Encoder", steerEncoder, 0);
+        RobustConfigurator.trySetMotorNeutralMode(name + " Steer Motor", steerMotor, NeutralModeValue.Coast);
     }
 
     public double finalizeCalibration() {
         angularOffset = -steerPosition.refresh().getValueAsDouble();
-        configurator.setCancoderAngularOffset(steerEncoder, angularOffset);
-        configurator.setMotorNeutralMode(steerMotor, NeutralModeValue.Brake);
+        cancelCalibration();
         return angularOffset;
     }
 
     public void cancelCalibration() {
-        configurator.setCancoderAngularOffset(steerEncoder, angularOffset);
+        RobustConfigurator.trySetCancoderAngularOffset(name + " Encoder", steerEncoder, angularOffset);
+        RobustConfigurator.trySetMotorNeutralMode(name + " Steer Motor", steerMotor, NeutralModeValue.Brake);
     }
 
     // Getters
@@ -151,7 +146,8 @@ public class SwerveModule {
 
     @Logged(name = "drivePosition")
     public double getDrivePosition() {
-        return BaseStatusSignal.getLatencyCompensatedValueAsDouble(drivePosition, driveVelocity) * DRIVE_POSITION_COEFFICIENT;
+        return BaseStatusSignal.getLatencyCompensatedValueAsDouble(
+            drivePosition, driveVelocity) * DRIVE_POSITION_COEFFICIENT;
     }
 
     @Logged(name = "driveVelocity")
@@ -179,13 +175,15 @@ public class SwerveModule {
         double steerAngle = getSteerAngle();
 
         // Deep-copy the state to prevent mutation bugs
-        targetState = new SwerveModuleState(state.speedMetersPerSecond, Rotation2d.fromDegrees(state.angle.getDegrees()));
+        targetState = new SwerveModuleState(
+            state.speedMetersPerSecond, Rotation2d.fromDegrees(state.angle.getDegrees()));
 
         targetState.optimize(Rotation2d.fromRotations(steerAngle));
         targetState.angle = Rotation2d.fromRotations((targetState.angle.getRotations() % 1.0 + 1.0) % 1.0);
         targetState.speedMetersPerSecond *= targetState.angle.minus(Rotation2d.fromRotations(steerAngle)).getCos();
 
-        driveMotor.setControl(driveMotorVelocity.withVelocity(targetState.speedMetersPerSecond / DRIVE_POSITION_COEFFICIENT));
+        driveMotor.setControl(
+            driveMotorVelocity.withVelocity(targetState.speedMetersPerSecond / DRIVE_POSITION_COEFFICIENT));
         steerMotor.setControl(steerMotorPosition.withPosition(targetState.angle.getRotations()));
     }
 
@@ -243,7 +241,8 @@ public class SwerveModule {
             driveRotorPosition.refresh();
 
             driveMotorSimState.setRotorVelocity(driveMotorVelocity.Velocity);
-            driveMotorSimState.setRawRotorPosition(driveRotorPosition.getValueAsDouble() + driveMotorVelocity.Velocity * dT);
+            driveMotorSimState.setRawRotorPosition(
+                driveRotorPosition.getValueAsDouble() + driveMotorVelocity.Velocity * dT);
 
             steerMotorSimState.setRawRotorPosition(steerMotorPosition.Position);
             steerEncoderSimState.setRawPosition(steerMotorPosition.Position);
@@ -261,8 +260,10 @@ public class SwerveModule {
         // Get motor voltages
         double driveMotorVoltage = driveMotorSimState.getMotorVoltageMeasure().in(Volts);
         double steerMotorVoltage = steerMotorSimState.getMotorVoltageMeasure().in(Volts);
-        SmartDashboard.putNumber("Simulation Debugging/Module Simulations/" + name + "/Drive Motor Voltage", driveMotorVoltage);
-        SmartDashboard.putNumber("Simulation Debugging/Module Simulations/" + name + "/Steer Motor Voltage", steerMotorVoltage);
+        SmartDashboard.putNumber(
+            "Simulation Debugging/Module Simulations/" + name + "/Drive Motor Voltage", driveMotorVoltage);
+        SmartDashboard.putNumber(
+            "Simulation Debugging/Module Simulations/" + name + "/Steer Motor Voltage", steerMotorVoltage);
 
         // Calculate position and velocity for given motor voltages
         driveMotorSimModel.setInputVoltage(driveMotorVoltage);

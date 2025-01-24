@@ -85,34 +85,34 @@ public class ChassisConstants {
 
     public static final TalonFXConfiguration driveMotorConfiguration = new TalonFXConfiguration()
         .withSlot0(new Slot0Configs()
-            .withKP(0.15)
-            .withKV(kV_DRIVE))
+                       .withKP(0.15)
+                       .withKV(kV_DRIVE))
         .withMotorOutput(new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake)
-            .withInverted(InvertedValue.Clockwise_Positive))
+                             .withNeutralMode(NeutralModeValue.Brake)
+                             .withInverted(InvertedValue.Clockwise_Positive))
         .withMotionMagic(new MotionMagicConfigs()
-            .withMotionMagicAcceleration(120)
-            .withMotionMagicJerk(360)
+                             .withMotionMagicAcceleration(120)
+                             .withMotionMagicJerk(360)
         )
         .withCurrentLimits(new CurrentLimitsConfigs()
-            .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
-            .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT))
+                               .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
+                               .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT))
         .withAudio(new AudioConfigs()
-            .withBeepOnBoot(true)
-            .withBeepOnConfig(true));
+                       .withBeepOnBoot(true)
+                       .withBeepOnConfig(true));
 
     public static final TalonFXConfiguration steerMotorConfiguration = new TalonFXConfiguration()
         .withSlot0(new Slot0Configs()
-            .withKP(8.0)
-            .withKI(0.01)
-            .withKD(0.16)
+                       .withKP(8.0)
+                       .withKI(0.01)
+                       .withKD(0.16)
         )
         .withMotorOutput(new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake)
-            .withInverted(InvertedValue.Clockwise_Positive))
+                             .withNeutralMode(NeutralModeValue.Brake)
+                             .withInverted(InvertedValue.Clockwise_Positive))
         .withMotionMagic(new MotionMagicConfigs()
-            .withMotionMagicAcceleration(25)
-            .withMotionMagicJerk(100)
+                             .withMotionMagicAcceleration(25)
+                             .withMotionMagicJerk(100)
         )
         .withClosedLoopGeneral(new ClosedLoopGeneralConfigs() {{
             ContinuousWrap = true;
@@ -127,13 +127,15 @@ public class ChassisConstants {
                       }}
         )
         .withCurrentLimits(new CurrentLimitsConfigs()
-            .withStatorCurrentLimit(STEER_STATOR_CURRENT_LIMIT)
-            .withSupplyCurrentLimit(STEER_SUPPLY_CURRENT_LIMIT))
+                               .withStatorCurrentLimit(STEER_STATOR_CURRENT_LIMIT)
+                               .withSupplyCurrentLimit(STEER_SUPPLY_CURRENT_LIMIT))
         .withAudio(new AudioConfigs()
-            .withBeepOnBoot(true)
-            .withBeepOnConfig(true));
+                       .withBeepOnBoot(true)
+                       .withBeepOnConfig(true));
 
-    public static final MagnetSensorConfigs encoderConfiguration = new MagnetSensorConfigs()
-        .withAbsoluteSensorDiscontinuityPoint(1)
-        .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive);
+    public static final CANcoderConfiguration encoderConfiguration = new CANcoderConfiguration()
+        .withMagnetSensor(new MagnetSensorConfigs()
+                              .withAbsoluteSensorDiscontinuityPoint(1)
+                              .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive)
+        );
 }

@@ -190,7 +190,8 @@ public class Chassis extends SubsystemIF {
     @Logged(name = "yaw")
     public ValidYaw getYaw() {
         boolean valid = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
-        return new ValidYaw(Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValueAsDouble(yaw, yawVelocity)), valid);
+        return new ValidYaw(
+            Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValueAsDouble(yaw, yawVelocity)), valid);
     }
 
     // Setters
@@ -204,7 +205,8 @@ public class Chassis extends SubsystemIF {
 
     public void drive(ChassisSpeeds velocity) {
         if (!isFieldCentric && DriverStation.getAlliance().orElse(null) == DriverStation.Alliance.Red) {
-            velocity = new ChassisSpeeds(-velocity.vxMetersPerSecond, -velocity.vyMetersPerSecond, velocity.omegaRadiansPerSecond);
+            velocity = new ChassisSpeeds(
+                -velocity.vxMetersPerSecond, -velocity.vyMetersPerSecond, velocity.omegaRadiansPerSecond);
         }
 
         drive(velocity, isFieldCentric);
@@ -243,7 +245,8 @@ public class Chassis extends SubsystemIF {
     private SwerveModulePosition[] calculateModuleDeltas(SwerveModulePosition[] last, SwerveModulePosition[] current) {
         SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[current.length];
         for (int i = 0; i < current.length; i++) {
-            moduleDeltas[i] = new SwerveModulePosition(current[i].distanceMeters - last[i].distanceMeters, current[i].angle);
+            moduleDeltas[i] = new SwerveModulePosition(
+                current[i].distanceMeters - last[i].distanceMeters, current[i].angle);
         }
 
         return moduleDeltas;
