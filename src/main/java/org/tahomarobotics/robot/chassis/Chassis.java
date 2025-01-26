@@ -23,7 +23,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
-import org.tahomarobotics.robot.chassis.commands.AlignSwerveCommand;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.persistent.CalibrationData;
 import org.tahomarobotics.robot.util.swerve.SwerveDrivePoseEstimatorDiff;
@@ -132,7 +131,7 @@ public class Chassis extends SubsystemIF {
 
     @Override
     public SubsystemIF initialize() {
-        SmartDashboard.putData("AlignSwerve", new AlignSwerveCommand());
+        SmartDashboard.putData("AlignSwerve", ChassisCommands.createAlignSwerveCommand(this));
         pigeon.setYaw(0);
 
         var gyro = getYaw().yaw;

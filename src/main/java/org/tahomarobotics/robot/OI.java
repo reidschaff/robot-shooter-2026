@@ -7,7 +7,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.tahomarobotics.robot.chassis.Chassis;
-import org.tahomarobotics.robot.chassis.commands.TeleopDriveCommand;
+import org.tahomarobotics.robot.chassis.ChassisCommands;
 import org.tahomarobotics.robot.util.SubsystemIF;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
@@ -45,7 +45,8 @@ public class OI extends SubsystemIF {
     }
 
     public void setDefaultCommands() {
-        chassis.setDefaultCommand(new TeleopDriveCommand(
+        chassis.setDefaultCommand(ChassisCommands.createTeleOpDriveCommand(
+            chassis,
             this::getDriveLeftY, this::getDriveLeftX, this::getDriveRightX
         ));
     }
