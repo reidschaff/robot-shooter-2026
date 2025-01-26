@@ -1,7 +1,7 @@
 package org.tahomarobotics.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
-import org.tahomarobotics.robot.util.Identity;
+import org.tahomarobotics.robot.util.identity.Identity;
 import org.tinylog.Logger;
 
 public final class Main {

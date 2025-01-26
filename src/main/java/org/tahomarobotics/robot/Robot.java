@@ -6,8 +6,8 @@ import edu.wpi.first.epilogue.NotLogged;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.tahomarobotics.robot.chassis.Chassis;
-import org.tahomarobotics.robot.util.FauxWatchdog;
 import org.tahomarobotics.robot.util.SubsystemIF;
+import org.tahomarobotics.robot.util.shims.FauxWatchdog;
 import org.tahomarobotics.robot.vision.Vision;
 import org.tinylog.Logger;
 

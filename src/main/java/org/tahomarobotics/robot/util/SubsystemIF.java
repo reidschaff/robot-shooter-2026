@@ -4,10 +4,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public abstract class SubsystemIF extends SubsystemBase {
     // Initialization
-
-    public SubsystemIF initialize() {
-        return this;
-    }
+    
+    public SubsystemIF initialize() { return this; }
 
     public void onDisabledInit() {}
 

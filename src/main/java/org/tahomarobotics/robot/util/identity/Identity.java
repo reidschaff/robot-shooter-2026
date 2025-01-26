@@ -1,8 +1,8 @@
-package org.tahomarobotics.robot.util;
+package org.tahomarobotics.robot.util.identity;
 
 @SuppressWarnings("ALL")
 public enum Identity {
-    BETA("00:00:00:00:00:00"), BEARITONE("00:80:2f:32:fd:29");
+    BETA("00:00:00:00:00:00");
 
     private final String addr;
 

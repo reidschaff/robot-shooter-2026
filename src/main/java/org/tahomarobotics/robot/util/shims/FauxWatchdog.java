@@ -1,4 +1,4 @@
-package org.tahomarobotics.robot.util;
+package org.tahomarobotics.robot.util.shims;
 
 import edu.wpi.first.wpilibj.Watchdog;
 
