@@ -86,7 +86,7 @@ public class SwerveModule {
         this.angularOffset = angularOffset;
 
         // TODO: This sucks, but is the easiest way to do this right now.
-        double steerReduction = Objects.equals(
+        steerReduction = Objects.equals(
             RobotMap.BACK_LEFT_MOD.moduleName(), name) ? Type.MK4n.steerReduction : Type.MK4i.steerReduction;
 
         driveMotor = new TalonFX(descriptor.driveId(), RobotConfiguration.CANBUS_NAME);
@@ -95,7 +95,7 @@ public class SwerveModule {
 
         RobustConfigurator.tryConfigureTalonFX(name + " Drive Motor", driveMotor, createDriveMotorConfiguration());
         RobustConfigurator.tryConfigureTalonFX(
-            name + " Steer Motor", steerMotor, createSteerMotorConfiguration(descriptor.encoderId()));
+            name + " Steer Motor", steerMotor, createSteerMotorConfiguration(name, descriptor.encoderId()));
         RobustConfigurator.tryConfigureCANcoder(name + " Encoder", steerEncoder, createEncoderConfiguration());
 
         drivePosition = driveMotor.getPosition();
