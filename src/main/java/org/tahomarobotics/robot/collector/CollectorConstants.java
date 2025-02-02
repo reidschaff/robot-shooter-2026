@@ -73,7 +73,7 @@ public class CollectorConstants {
     public enum TargetDeployState {
         ZEROED(Units.degreesToRotations(83)),
         STOW(Units.degreesToRotations(75)),
-        CORAL_COLLECT(Units.degreesToRotations(-19)),
+        CORAL_COLLECT(Units.degreesToRotations(-20.75)),
         ALGAE_COLLECT(Units.degreesToRotations(0)),
         EJECT(Units.degreesToRotations(0));
 

@@ -17,6 +17,8 @@ import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.collector.CollectorCommands;
 import org.tahomarobotics.robot.elevator.Elevator;
 import org.tahomarobotics.robot.elevator.ElevatorConstants;
+import org.tahomarobotics.robot.indexer.Indexer;
+import org.tahomarobotics.robot.indexer.IndexerCommands;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 
@@ -36,12 +38,12 @@ public class OI extends SubsystemIF {
 
     // -- Subsystems --
 
-    //    private final Indexer indexer = Indexer.getInstance();
+    private final Indexer indexer = Indexer.getInstance();
     private final Collector collector = Collector.getInstance();
     private final Chassis chassis = Chassis.getInstance();
     private final Elevator elevator = Elevator.getInstance();
 
-    private final List<SubsystemIF> subsystems = List.of(/*indexer,*/ collector, chassis, elevator);
+    private final List<SubsystemIF> subsystems = List.of(indexer, collector, chassis, elevator);
 
     // -- Controllers --
 
@@ -81,12 +83,12 @@ public class OI extends SubsystemIF {
 
         // Indexer
 
-//        Pair<Command, Command> indexerCommands = IndexerCommands.createIndexerCommands(indexer);
-//        controller.leftTrigger().onTrue(indexerCommands.getFirst()).onFalse(indexerCommands.getSecond());
-//
-//        Pair<Command, Command> indexerEjectingCommands = IndexerCommands.createIndexerEjectingCommands(indexer);
-//        controller.povLeft().onTrue(indexerEjectingCommands.getFirst())
-//                       .onFalse(indexerEjectingCommands.getSecond());
+        Pair<Command, Command> indexerCommands = IndexerCommands.createIndexerCommands(indexer);
+        controller.leftTrigger().onTrue(indexerCommands.getFirst()).onFalse(indexerCommands.getSecond());
+
+        Pair<Command, Command> indexerEjectingCommands = IndexerCommands.createIndexerEjectingCommands(indexer);
+        controller.povLeft().onTrue(indexerEjectingCommands.getFirst())
+                  .onFalse(indexerEjectingCommands.getSecond());
 
         // Elevator
         // TODO: Temporary Controls

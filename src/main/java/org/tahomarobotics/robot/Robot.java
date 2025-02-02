@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.elevator.Elevator;
+import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.shims.FauxWatchdog;
 import org.tahomarobotics.robot.vision.Vision;
@@ -27,8 +28,8 @@ public class Robot extends TimedRobot {
     private final Elevator elevator = Elevator.getInstance();
     @Logged(name = "Collector")
     private final Collector collector = Collector.getInstance();
-    //    @Logged(name = "Indexer")
-//    private final Indexer indexer = Indexer.getInstance();
+    @Logged(name = "Indexer")
+    private final Indexer indexer = Indexer.getInstance();
     @Logged(name = "OI")
     private final OI oi = OI.getInstance();
 
@@ -37,7 +38,7 @@ public class Robot extends TimedRobot {
         chassis.initialize(),
         vision.initialize(),
         elevator.initialize(),
-//        indexer.initialize(),
+        indexer.initialize(),
         collector.initialize(),
         oi.initialize()
     );
