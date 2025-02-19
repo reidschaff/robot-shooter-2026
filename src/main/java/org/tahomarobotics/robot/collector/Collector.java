@@ -12,6 +12,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -133,6 +134,9 @@ public class Collector extends SubsystemIF {
     }
 
     public void zero() {
+        if (RobotState.isDisabled()) { return; }
+        Logger.info("Zeroed collector.");
+
         leftMotor.setPosition(TargetDeployState.ZEROED.angle);
         rightMotor.setPosition(TargetDeployState.ZEROED.angle);
 
@@ -258,7 +262,7 @@ public class Collector extends SubsystemIF {
     }
 
     public void collectorTransitionToCollecting() {
-        if (indexer.isCollected()) return;
+        if (indexer.isCollected()) { return; }
         setTargetCollectorState(TargetCollectorState.COLLECTING);
     }
 
@@ -286,10 +290,12 @@ public class Collector extends SubsystemIF {
 
     @Override
     public SubsystemIF initialize() {
-        Commands.waitUntil(() -> RobotState.isEnabled() && !RobotState.isTest())
-                .andThen(CollectorCommands.createZeroCommand(this))
-                .ignoringDisable(true)
-                .schedule(); // TODO: Replace with a trigger binding.
+        new Trigger(() -> RobotState.isEnabled() && !RobotState.isTest())
+            .onTrue(
+                CollectorCommands
+                    .createZeroCommand(this)
+                    .onlyIf(() -> targetDeployState == TargetDeployState.ZEROED)
+            );
 
         return this;
     }
