@@ -69,6 +69,7 @@ public class WindmillConstants {
 
     // Poses
 
+    public static final double ARM_CALIBRATION_POSE = 0.25;
     public static final double ARM_COLLECT_POSE = 0.75;
     public static final double ARM_UPRIGHT_POSE = 0.25;
     public static final double ARM_TEST_POSE = 0; // TODO: temporary

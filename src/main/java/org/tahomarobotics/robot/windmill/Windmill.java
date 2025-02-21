@@ -1,6 +1,7 @@
 package org.tahomarobotics.robot.windmill;
 
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -14,16 +15,17 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 import org.tahomarobotics.robot.util.SubsystemIF;
-import org.tahomarobotics.robot.util.persistent.CalibrationData;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 import org.tahomarobotics.robot.windmill.commands.WindmillCommands;
@@ -71,10 +73,7 @@ public class Windmill extends SubsystemIF {
     private WindmillState targetState = WindmillState.fromPrevious(0, 0, 0, null);
     private TrajectoryState targetTrajectoryState = TrajectoryState.START;
 
-    private boolean elevatorCalibrated = true, armCalibrated = true;
-
-    private CalibrationData<Boolean> elevatorCalibration = null;
-    private CalibrationData<Boolean> armCalibration = null;
+    private boolean zeroed = false;
 
     // Trajectory
 
@@ -98,25 +97,6 @@ public class Windmill extends SubsystemIF {
         RobustConfigurator.tryConfigureTalonFX("Elevator Left Motor", elevatorLeftMotor, elevatorMotorConfiguration);
         elevatorRightMotor.setControl(new Follower(RobotMap.ELEVATOR_LEFT_MOTOR, true));
         RobustConfigurator.tryConfigureTalonFX("Arm Motor", armMotor, armMotorConfiguration);
-
-        // Load previous calibrations
-
-        if (RobotBase.isReal()) {
-            elevatorCalibration = new CalibrationData<>("ElevatorCalibration", false);
-            armCalibration = new CalibrationData<>("ArmCalibration", false);
-
-            elevatorCalibrated = elevatorCalibration.get();
-            armCalibrated = armCalibration.isCalibrated();
-
-            applyArmOffset();
-
-            if (!elevatorCalibrated) {
-                Logger.error("Elevator is not calibrated, cannot use until calibration is completed!");
-            }
-            if (!armCalibrated) {
-                Logger.error("Arm is not calibrated, cannot use until calibration is completed!");
-            }
-        }
 
         // Status Signals
 
@@ -156,47 +136,35 @@ public class Windmill extends SubsystemIF {
     @Override
     public SubsystemIF initialize() {
         // Publish calibration commands
-        SmartDashboard.putData("Calibrate Elevator", WindmillCommands.createCalibrateElevatorCommand(this));
-        SmartDashboard.putData("Calibrate Arm", WindmillCommands.createCalibrateArmCommand(this));
+        SmartDashboard.putData("Calibrate Windmill", WindmillCommands.createCalibrateCommand(this));
+
+        // Calibrate on first enable
+        new Trigger(RobotState::isEnabled).onTrue(Commands.runOnce(this::calibrate).onlyIf(() -> !zeroed));
+
+        // Calibrate with user button
+        new Trigger(RobotController::getUserButton).onTrue(WindmillCommands.createUserButtonCalibrateCommand(this));
 
         return this;
     }
 
     // -- Calibration --
 
-    public void initializeElevatorCalibration() {
-        RobustConfigurator.trySetMotorNeutralMode("Elevator Left Motor", elevatorLeftMotor, NeutralModeValue.Coast);
+    public void disableBrakeMode() {
+        elevatorLeftMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Coast));
+        armMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Coast));
     }
 
-    public void initializeArmCalibration() {
-        RobustConfigurator.trySetMotorNeutralMode("Arm Left Motor", armMotor, NeutralModeValue.Coast);
-    }
-
-    public void finalizeElevatorCalibration() {
+    public void calibrate() {
         elevatorEncoder.setPosition(0);
+        armEncoder.setPosition(ARM_CALIBRATION_POSE / ARM_BELT_REDUCTION);
 
-        elevatorCalibration.set(true);
-        elevatorCalibrated = true;
-
-        RobustConfigurator.trySetMotorNeutralMode("Elevator Motor", elevatorLeftMotor, NeutralModeValue.Brake);
+        zeroed = true;
+        enableBrakeMode();
     }
 
-    public void finalizeArmCalibration() {
-        // Divide by sensor coefficient to set accurate position
-        armEncoder.setPosition(ARM_UPRIGHT_POSE / ARM_BELT_REDUCTION);
-
-        armCalibration.set(true);
-        armCalibrated = true;
-
-        RobustConfigurator.trySetMotorNeutralMode("Arm Motor", armMotor, NeutralModeValue.Brake);
-    }
-
-    public void applyElevatorOffset() {
-        RobustConfigurator.trySetMotorNeutralMode("Elevator Left Motor", elevatorLeftMotor, NeutralModeValue.Brake);
-    }
-
-    public void applyArmOffset() {
-        RobustConfigurator.trySetMotorNeutralMode("Arm Motor", armMotor, NeutralModeValue.Brake);
+    public void enableBrakeMode() {
+        elevatorLeftMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+        armMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
     }
 
     // -- Getters --
@@ -321,7 +289,7 @@ public class Windmill extends SubsystemIF {
     }
 
     public void setElevatorHeight(double height) {
-        if (!elevatorCalibrated) {
+        if (!zeroed) {
             Logger.error("Cannot move elevator without calibration!");
             return;
         }
@@ -338,7 +306,7 @@ public class Windmill extends SubsystemIF {
     }
 
     public void setArmPosition(double position) {
-        if (!armCalibrated) {
+        if (!zeroed) {
             Logger.error("Cannot move arm without calibration!");
             return;
         }

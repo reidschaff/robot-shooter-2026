@@ -8,51 +8,45 @@ import org.tahomarobotics.robot.windmill.Windmill;
 import org.tinylog.Logger;
 
 public class WindmillCommands {
-    public static Command createCalibrateElevatorCommand(Windmill subsystem) {
+    public static Command createCalibrateCommand(Windmill windmill) {
         String FINALIZE_KEY = "Finalize";
 
         Command cmd = (
             Commands.waitUntil(() -> SmartDashboard.getBoolean(FINALIZE_KEY, false))
                     .beforeStarting(() -> {
                         SmartDashboard.putBoolean(FINALIZE_KEY, false);
-                        subsystem.initializeElevatorCalibration();
-                        Logger.info("Calibrating elevator...");
+                        windmill.disableBrakeMode();
+                        Logger.info("Calibrating windmill...");
                     }).finallyDo(interrupted -> {
                         if (interrupted) {
-                            Logger.info("Cancelling elevator calibration.");
-                            subsystem.applyElevatorOffset();
+                            Logger.info("Cancelling windmill calibration.");
+                            windmill.enableBrakeMode();
                         } else {
-                            Logger.info("Elevator calibrated!");
-                            subsystem.finalizeElevatorCalibration();
+                            Logger.info("Windmill calibrated!");
+                            windmill.calibrate();
                         }
                     })
         ).onlyWhile(RobotState::isDisabled).ignoringDisable(true);
-        cmd.addRequirements(subsystem);
+        cmd.addRequirements(windmill);
 
         return cmd;
     }
 
-    public static Command createCalibrateArmCommand(Windmill subsystem) {
-        String FINALIZE_KEY = "Finalize";
+    public static Command createUserButtonCalibrateCommand(Windmill windmill) {
+        String FINALIZE_KEY = "User-Finalize";
 
-        Command cmd = (
-            Commands.waitUntil(() -> SmartDashboard.getBoolean(FINALIZE_KEY, false))
-                    .beforeStarting(() -> {
-                        SmartDashboard.putBoolean(FINALIZE_KEY, false);
-                        subsystem.initializeArmCalibration();
-                        Logger.info("Calibrating arm...");
-                    }).finallyDo(interrupted -> {
-                        if (interrupted) {
-                            Logger.info("Cancelling arm calibration.");
-                            subsystem.applyArmOffset();
-                        } else {
-                            Logger.info("Arm calibrated!");
-                            subsystem.finalizeArmCalibration();
-                        }
-                    })
-        ).onlyWhile(RobotState::isDisabled).ignoringDisable(true);
-        cmd.addRequirements(subsystem);
+        return windmill.runOnce(() -> {
+            Logger.error("TRIGGERED USER BUTTON");
 
-        return cmd;
+            if (SmartDashboard.getBoolean(FINALIZE_KEY, false)) {
+                Logger.info("Windmill calibrated!");
+                windmill.calibrate();
+                SmartDashboard.putBoolean(FINALIZE_KEY, false);
+            } else {
+                windmill.disableBrakeMode();
+                Logger.info("Calibrating windmill...");
+                SmartDashboard.putBoolean(FINALIZE_KEY, true);
+            }
+        }).onlyWhile(RobotState::isDisabled).ignoringDisable(true);
     }
 }
