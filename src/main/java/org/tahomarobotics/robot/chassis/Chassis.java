@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -363,7 +364,8 @@ public class Chassis extends SubsystemIF {
         double dT = Timer.getFPGATimestamp() - lastUpdate;
         lastUpdate = currentTime;
 
-        pigeon.getSimState().addYaw(getChassisSpeeds().omegaRadiansPerSecond * dT);
+        double omegaDegreesPerSecond = Units.radiansToDegrees(getChassisSpeeds().omegaRadiansPerSecond * dT);
+        pigeon.getSimState().addYaw(omegaDegreesPerSecond);
     }
 
     // -- Status Signals --
