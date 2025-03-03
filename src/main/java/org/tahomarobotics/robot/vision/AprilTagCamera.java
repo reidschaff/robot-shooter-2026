@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.Timer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonUtils;
 import org.photonvision.estimation.TargetModel;
 import org.photonvision.estimation.VisionEstimation;
@@ -77,17 +78,20 @@ public class AprilTagCamera implements AutoCloseable {
 
     // Camera
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private final String name;
-    @AutoLogOutput(key = "Vision/{name}/Configuration")
     protected final CameraConfiguration configuration;
+
     protected final PhotonCamera camera;
     protected final PhotonCameraSim sim;
 
     private final Matrix<N3, N3> cameraMatrix;
     private final Matrix<N8, N1> distortionCoefficients;
 
-    private final Consumer<EstimatedRobotPose> callback;
+    private final Consumer<EstimatedRobotPose> estimationCallback;
+    private final PhotonPoseEstimator isolationPoseEstimator;
 
+    @SuppressWarnings("FieldCanBeLocal")
     private final Notifier notifier;
 
     // Diagnostics
@@ -97,6 +101,14 @@ public class AprilTagCamera implements AutoCloseable {
     private Pose2d multiTagPose = new Pose2d();
     @AutoLogOutput(key = "Vision/{name}/Single-Tag Pose")
     private Pose2d singleTagPose = new Pose2d();
+
+    @AutoLogOutput(key = "Vision/{name}/AprilTags")
+    private Pose3d[] aprilTags = new Pose3d[0];
+    @AutoLogOutput(key = "Vision/{name}/AprilTag IDs")
+    private int[] aprilTagIDs = new int[0];
+
+    @AutoLogOutput(key = "Vision/{name}/Isolated Tag")
+    private int isolationTarget = -1;
 
     @AutoLogOutput(key = "Vision/{name}/Failed Updates")
     private int failedUpdates = 0;
@@ -127,7 +139,11 @@ public class AprilTagCamera implements AutoCloseable {
     ) {
         this.name = configuration.name();
         this.configuration = configuration;
-        this.callback = callback;
+
+        this.estimationCallback = callback;
+        this.isolationPoseEstimator = new PhotonPoseEstimator(
+            FIELD_LAYOUT, PhotonPoseEstimator.PoseStrategy.PNP_DISTANCE_TRIG_SOLVE, configuration.transform());
+
         this.notifier = new Notifier(this::processUnreadVisionUpdates);
 
         logger = Logger.tag(configuration.name());
@@ -161,7 +177,7 @@ public class AprilTagCamera implements AutoCloseable {
         camera.getAllUnreadResults()
               .forEach(result -> {
                   var est = processUpdate(result);
-                  est.ifPresent(callback);
+                  est.ifPresent(estimationCallback);
               });
     }
 
@@ -174,8 +190,18 @@ public class AprilTagCamera implements AutoCloseable {
      * @return An estimated pose, if possible
      */
     private Optional<EstimatedRobotPose> processUpdate(PhotonPipelineResult result) {
+        Optional<Pose3d> chassisPose = Chassis.getInstance().getPoseAtTimestamp(result.getTimestampSeconds()).map(Pose3d::new);
+
         double timestamp = result.getTimestampSeconds();
         double now = Timer.getFPGATimestamp();
+
+        // Publish AprilTag Positions
+        chassisPose.ifPresent(pose -> {
+            aprilTags = result.getTargets().stream()
+                              .map(target -> pose.plus(configuration.transform()).plus(target.getBestCameraToTarget()))
+                              .toArray(Pose3d[]::new);
+            aprilTagIDs = result.getTargets().stream().mapToInt(PhotonTrackedTarget::getFiducialId).toArray();
+        });
 
         // Pre-filtering
 
@@ -186,6 +212,24 @@ public class AprilTagCamera implements AutoCloseable {
 
         if (targets.isEmpty()) {
             return Optional.empty();
+        }
+
+        if (isolationTarget > 0) {
+            isolationPoseEstimator.addHeadingData(
+                result.getTimestampSeconds(), chassisPose.map(p -> p.getRotation().toRotation2d()).orElseGet(Chassis.getInstance()::getHeading));
+
+            Optional<PhotonTrackedTarget> target_ = targets.stream().filter(t -> t.fiducialId == isolationTarget).findAny();
+            if (target_.isEmpty()) { return Optional.empty(); }
+            PhotonTrackedTarget target = target_.get();
+
+            var est = isolationPoseEstimator.update(new PhotonPipelineResult(result.metadata, List.of(target), Optional.empty()));
+            return est.map(e -> new EstimatedRobotPose(
+                name, result.getTimestampSeconds(),
+                EstimatedRobotPose.Type.ISOLATED_SINGLE_TAG,
+                e.estimatedPose.toPose2d(),
+                BASE_ISOLATED_SINGLE_TAG_STD_DEV,
+                List.of(target)
+            ));
         }
 
         // CasADi pose estimation
@@ -354,9 +398,22 @@ public class AprilTagCamera implements AutoCloseable {
         return configuration.name();
     }
 
+    // Setters
+
+    void isolate(int tag) {
+        isolationTarget = tag;
+    }
+
+    void globalize() {
+        isolationTarget = -1;
+    }
+
     // Diagnostics
 
-    /** Whether the camera is currently connected. */
+    /**
+     * Whether the camera is currently connect        isolationPoseEstimator.setLastPose();
+     * ed.
+     */
     @AutoLogOutput(key = "Vision/{name}/Connected?")
     public boolean connected() {
         return camera.isConnected();
@@ -369,6 +426,7 @@ public class AprilTagCamera implements AutoCloseable {
         sim.addCamera(this.sim, configuration.transform());
     }
 
+
     // Processing Results
 
     /**
@@ -378,7 +436,7 @@ public class AprilTagCamera implements AutoCloseable {
     public record EstimatedRobotPose(String cameraName, double timestamp, AprilTagCamera.EstimatedRobotPose.Type type, Pose2d pose, Vector<N3> stdDevs,
                                      List<PhotonTrackedTarget> targets) {
         public enum Type {
-            MULTI_TAG, SINGLE_TAG
+            MULTI_TAG, SINGLE_TAG, ISOLATED_SINGLE_TAG
         }
     }
 

@@ -10,8 +10,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import org.tahomarobotics.robot.auto.AutoConstants;
-import org.tahomarobotics.robot.auto.DriveToPoseCommand;
+import org.tahomarobotics.robot.auto.AutonomousConstants;
+import org.tahomarobotics.robot.auto.DriveToPoseV3Command;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisCommands;
 import org.tahomarobotics.robot.climber.Climber;
@@ -55,6 +55,7 @@ public class OI extends SubsystemIF {
     // -- Controllers --
 
     private final CommandXboxController controller = new CommandXboxController(0);
+    private final CommandXboxController lessImportantController = new CommandXboxController(1);
 
     // -- Initialization --
 
@@ -77,8 +78,8 @@ public class OI extends SubsystemIF {
 
         controller.povDown().onTrue(Commands.runOnce(chassis::orientToZeroHeading));
 
-        controller.rightBumper().whileTrue(Commands.deferredProxy(() -> new DriveToPoseCommand(
-            AutoConstants.getNearestReefPoleScorePosition(Chassis.getInstance().getPose().getTranslation())
+        controller.rightBumper().whileTrue(Commands.deferredProxy(() -> new DriveToPoseV3Command(
+            AutonomousConstants.getNearestReefPoleScorePosition(Chassis.getInstance().getPose().getTranslation())
         )));
 
         // Collector
@@ -166,6 +167,22 @@ public class OI extends SubsystemIF {
                 return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.COLLECT, WindmillConstants.TrajectoryState.STOW);
             } else { return windmill.createResetToClosestCommand(); }
         }));
+
+        lessImportantController.x().onTrue(
+            Commands.runOnce(
+                        () -> {
+                            windmill.setTargetState(WindmillConstants.TrajectoryState.STOW);
+                            windmill.setArmPosition(0.25);
+                        }
+                    )
+                    .andThen(Commands.waitUntil(windmill::isArmAtPosition))
+                    .andThen(Commands.runOnce(() -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_MIN_POSE)))
+        );
+
+        lessImportantController.povLeft()
+                               .onTrue(Commands.runOnce(() -> chassis.incrementAutoAligningOffset(AutonomousConstants.FUDGE_INCREMENT)).ignoringDisable(true));
+        lessImportantController.povRight()
+                               .onTrue(Commands.runOnce(() -> chassis.incrementAutoAligningOffset(-AutonomousConstants.FUDGE_INCREMENT)).ignoringDisable(true));
 
         SmartDashboard.putData(
             "Set Elevator Collecting", Commands.runOnce(

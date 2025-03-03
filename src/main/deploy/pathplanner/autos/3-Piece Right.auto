@@ -23,12 +23,6 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Windmill to L4"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
                   "name": "Zero Collector"
                 }
               }
@@ -94,7 +88,7 @@
       ]
     }
   },
-  "resetOdom": true,
+  "resetOdom": false,
   "folder": null,
   "choreoAuto": false
 }

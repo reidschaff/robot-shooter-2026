@@ -1,5 +1,6 @@
 package org.tahomarobotics.robot.climber.commands;
 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import org.tahomarobotics.robot.climber.Climber;
@@ -26,8 +27,9 @@ public class ClimberCommands {
             () ->
                 switch (climber.getClimbState()) {
                     case STOWED -> Commands.runOnce(climber::deploy)
-                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setElevatorHeight(0.005)))
-                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(0.5)));
+                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(0.29 + Units.degreesToRotations(15))))
+                                           .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition))
+                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setElevatorHeight(0.005)));
                     case DEPLOYED -> Commands.runOnce(climber::climb)
                                              .andThen(Commands.runOnce(climber::deploySolenoid))
                                              .andThen(Commands.waitUntil(climber::isAtTargetPosition))

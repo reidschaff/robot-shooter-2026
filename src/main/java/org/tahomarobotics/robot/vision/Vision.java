@@ -23,13 +23,13 @@ public class Vision extends SubsystemIF implements AutoCloseable {
 
     // Camera
 
-    private final AprilTagCamera elevatorSwerve =
+    public final AprilTagCamera elevatorSwerve =
         new AprilTagCamera(
             VisionConstants.ELEVATOR_SWERVE, VisionConstants.simOV9782Properties,
             estimationCallback
         );
 
-    private final AprilTagCamera climberSwerve =
+    public final AprilTagCamera climberSwerve =
         new AprilTagCamera(
             VisionConstants.CLIMBER_SWERVE, VisionConstants.simOV9782Properties,
             estimationCallback
@@ -48,6 +48,16 @@ public class Vision extends SubsystemIF implements AutoCloseable {
 
     public static Vision getInstance() {
         return INSTANCE;
+    }
+
+    // Setters
+
+    public void isolate(int tag) {
+        aprilTagCameras.values().forEach(c -> c.isolate(tag));
+    }
+
+    public void globalize() {
+        aprilTagCameras.values().forEach(AprilTagCamera::globalize);
     }
 
     // Simulation

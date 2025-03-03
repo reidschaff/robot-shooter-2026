@@ -20,7 +20,7 @@ public class GrabberCommands {
 
     public static Pair<Command, Command> createGrabberScoringCommands(Grabber grabber) {
         Command onTrue = grabber.runOnce(grabber::transitionToScoring);
-        Command onFalse = grabber.runOnce(grabber::transitionToDisabled);
+        Command onFalse = grabber.runOnce(grabber::transitionToDisabled).onlyIf(() -> !grabber.collectionTimer.isRunning());
 
         return Pair.of(onTrue, onFalse);
     }

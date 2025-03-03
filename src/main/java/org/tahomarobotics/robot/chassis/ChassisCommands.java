@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import org.tahomarobotics.robot.windmill.Windmill;
 
 import java.util.function.DoubleSupplier;
 
@@ -36,11 +37,12 @@ public class ChassisCommands {
         Chassis chassis,
         DoubleSupplier x, DoubleSupplier y, DoubleSupplier omega
     ) {
-        double maxVelocity = ChassisConstants.MAX_VELOCITY;
         double maxAngularVelocity = ChassisConstants.MAX_ANGULAR_VELOCITY;
 
         return chassis.runEnd(
             () -> {
+                double maxVelocity = Windmill.getInstance().isScoringCoral() ? ChassisConstants.SLOW_VELOCITY : ChassisConstants.MAX_VELOCITY;
+
                 double direction = DriverStation.getAlliance().orElse(null) == DriverStation.Alliance.Red ? -1.0 : 1.0;
 
                 chassis.drive(new ChassisSpeeds(

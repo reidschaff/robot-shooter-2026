@@ -57,7 +57,7 @@ public class ChassisConstants {
     /** Ratio between angular position and position in <strong>meters</strong> for the wheel. */
     public static final double DRIVE_POSITION_COEFFICIENT = WHEEL_CIRCUMFERENCE * DRIVE_REDUCTION;
 
-    public static final double ROBOT_MOI = 1.0 / 12.0 * MASS *  (TRACK_WIDTH * TRACK_WIDTH + WHEELBASE * WHEELBASE);
+    public static final double ROBOT_MOI = 1.0 / 12.0 * MASS * (TRACK_WIDTH * TRACK_WIDTH + WHEELBASE * WHEELBASE);
 
     /**
      * Load inertia for each drive motor in <strong>kilogram meter squared</strong>.
@@ -75,6 +75,8 @@ public class ChassisConstants {
 
     // Motion
 
+    public static final double SLOW_VELOCITY = 2;
+
     public static final DCMotor DRIVE_MOTOR = DCMotor.getKrakenX60Foc(1);
     /** Theoretical max velocity of the robot in <strong>meters per second</strong>. */
     public static final double MAX_VELOCITY = DRIVE_MOTOR.freeSpeedRadPerSec * DRIVE_REDUCTION * WHEEL_RADIUS;
@@ -82,8 +84,10 @@ public class ChassisConstants {
     public static final double MAX_ANGULAR_VELOCITY = MAX_VELOCITY / Math.hypot(HALF_TRACK_WIDTH, HALF_WHEELBASE);
     /** Max average acceleration across all modules in <strong>meters per second squared</strong>. */
     public static final double ACCELERATION_LIMIT = 6.0;
+    /** Max average acceleration across all modules in <strong>meters per second squared</strong> when arm is in a scoring position. */
+    public static final double SLOW_ACCELERATION_LIMIT = 3.0;
     //Placeholder PID values
-    public static final PIDConstants AUTO_TRANSLATION_PID = new PIDConstants(7.5,0,0.5);
+    public static final PIDConstants AUTO_TRANSLATION_PID = new PIDConstants(7.5, 0, 0.5);
     public static final PIDConstants AUTO_ROTATION_PID = new PIDConstants(5, 0, 0.5);
 
     // Control Loops
@@ -107,7 +111,7 @@ public class ChassisConstants {
             WHEEL_RADIUS,
             MAX_VELOCITY * 0.95,
             WHEEL_COF,
-            DRIVE_MOTOR.withReduction(1.0/DRIVE_REDUCTION),
+            DRIVE_MOTOR.withReduction(1.0 / DRIVE_REDUCTION),
             DRIVE_SUPPLY_CURRENT_LIMIT,  // This is used when calculating current available at Nominal Voltage (@12V) which is limited via the supply current
             1
         ),

@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
 import org.tahomarobotics.robot.collector.Collector;
@@ -31,16 +30,18 @@ import org.tahomarobotics.robot.indexer.IndexerCommands;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
-import org.tinylog.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
 
 public class Autonomous extends SubsystemIF {
     private static final Autonomous INSTANCE = new Autonomous();
 
     private final Chassis chassis = Chassis.getInstance();
     private final SendableChooser<Command> autoChooser;
-    private String currentAutoName = AutoConstants.DEFAULT_AUTO_NAME;
+    private String currentAutoName = AutonomousConstants.DEFAULT_AUTO_NAME;
 
     private Autonomous() {
         registerNamedCommands();
@@ -55,10 +56,9 @@ public class Autonomous extends SubsystemIF {
             EnumSet.of(NetworkTableEvent.Kind.kValueAll),
             e -> {
                 var command = autoChooser.getSelected();
-                if (command != null)
-                    this.onAutoChange(command);
-                else
-                    this.onAutoChange(Commands.none().withName(AutoConstants.DEFAULT_AUTO_NAME));
+                if (command != null) { this.onAutoChange(command); } else {
+                    this.onAutoChange(Commands.none().withName(AutonomousConstants.DEFAULT_AUTO_NAME));
+                }
             }
         );
 
@@ -158,7 +158,7 @@ public class Autonomous extends SubsystemIF {
     }
 
     private void postAutoTrajectory(Field2d field, String autoName) {
-        if (autoName == null || autoName.equals(AutoConstants.DEFAULT_AUTO_NAME)) {
+        if (autoName == null || autoName.equals(AutonomousConstants.DEFAULT_AUTO_NAME)) {
             chassis.resetOdometry(new Pose2d());
             field.getObject("Trajectory").setTrajectory(new Trajectory());
             return;

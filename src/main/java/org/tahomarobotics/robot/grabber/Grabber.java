@@ -53,7 +53,7 @@ public class Grabber extends SubsystemIF {
     @AutoLogOutput(key = "Grabber/State")
     private GrabberState state = GrabberState.DISABLED;
 
-    private final Timer collectionTimer = new Timer();
+    final Timer collectionTimer = new Timer();
 
     // -- Initialization --
 

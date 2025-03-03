@@ -47,8 +47,9 @@ public class VisionConstants {
 
     // Standard Deviations
 
-    public static final Vector<N3> BASE_MULTI_TAG_STD_DEV = VecBuilder.fill(0.25, 0.25, 0.5);
-    public static final Vector<N3> BASE_SINGLE_TAG_STD_DEV = VecBuilder.fill(0.75, 0.75, 1);
+    public static final Vector<N3> BASE_MULTI_TAG_STD_DEV = VecBuilder.fill(0.5, 0.5, 1);
+    public static final Vector<N3> BASE_SINGLE_TAG_STD_DEV = VecBuilder.fill(1.5, 1.5, 2);
+    public static final Vector<N3> BASE_ISOLATED_SINGLE_TAG_STD_DEV = VecBuilder.fill(0.125, 0.125, 10);
 
     public static final double AMBIGUITY_THRESHOLD = 0.03;
 

@@ -4,15 +4,16 @@ import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.util.Units;
 
 public class ClimberConstants {
-    // TODO: Need to diagnose ratio, position readings are inaccurate with reality
+    // TODO: 1 / 78
     public static final double MOTOR_TO_CLIMBER_GEAR_RATIO = (8.0 / 72.0) * (18.0 / 72.0) * (16.0 / 48.0);
     public static final double CLIMBER_ZERO_POSITION = 0.0;
 
     public static final double STOW_POSITION = 0.308; // Needs to be changed to not interfere with collector or arm
-    public static final double DEPLOY_POSITION = 0.39;
-    public static final double CLIMB_POSITION = -0.0075; // Probably needs to be tuned with new climber
+    public static final double DEPLOY_POSITION = 0.41;
+    public static final double CLIMB_POSITION = -0.0075 - Units.degreesToRotations(17.5); // Probably needs to be tuned with new climber
 
     public static final double CLIMB_POSITION_TOLERANCE = 0.001;
 

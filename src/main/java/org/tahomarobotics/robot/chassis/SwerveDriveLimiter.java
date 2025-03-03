@@ -2,6 +2,7 @@ package org.tahomarobotics.robot.chassis;
 
 import edu.wpi.first.math.MathSharedStore;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import org.tahomarobotics.robot.windmill.Windmill;
 
 public class SwerveDriveLimiter {
 
@@ -9,15 +10,15 @@ public class SwerveDriveLimiter {
     private SwerveModuleState[] prevStates;
     private double prevTime;
 
-    private final double accelerationLimit;
-
-    public SwerveDriveLimiter(SwerveModuleState[] states, double accelerationLimit) {
+    public SwerveDriveLimiter(SwerveModuleState[] states) {
         prevStates = states;
-        this.accelerationLimit = accelerationLimit;
         prevTime = MathSharedStore.getTimestamp();
     }
 
     public SwerveModuleState[] calculate(SwerveModuleState[] states) {
+        double accelerationLimit = (Windmill.getInstance().isScoringCoral() && !Chassis.getInstance().isAutoAligning()) ?
+            ChassisConstants.SLOW_ACCELERATION_LIMIT : ChassisConstants.ACCELERATION_LIMIT;
+
         double[] acceleration = new double[states.length];
         SwerveModuleState[] limited = new SwerveModuleState[4];
         System.arraycopy(states, 0, limited, 0, states.length);

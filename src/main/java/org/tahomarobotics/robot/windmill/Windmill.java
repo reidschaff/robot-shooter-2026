@@ -229,6 +229,11 @@ public class Windmill extends SubsystemIF {
         return zeroed;
     }
 
+    public boolean isScoringCoral() {
+        return !(targetTrajectoryState == WindmillConstants.TrajectoryState.COLLECT || targetTrajectoryState == WindmillConstants.TrajectoryState.STOW) &&
+               Collector.getInstance().getCollectionMode() != GamePiece.ALGAE;
+    }
+
     // Elevator
 
     @AutoLogOutput(key = "Windmill/Elevator/Height")

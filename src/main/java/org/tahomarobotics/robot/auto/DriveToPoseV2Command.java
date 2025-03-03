@@ -8,21 +8,30 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.photonvision.PhotonPoseEstimator;
 import org.tahomarobotics.robot.chassis.Chassis;
+import org.tahomarobotics.robot.vision.Vision;
+import org.tahomarobotics.robot.vision.VisionConstants;
 import org.tinylog.Logger;
 
 import static org.tahomarobotics.robot.auto.AutonomousConstants.*;
 
 // Adapted from another team, not sure who though...
-public class DriveToPoseCommand extends Command {
+public class DriveToPoseV2Command extends Command {
     private final Chassis chassis = Chassis.getInstance();
 
     private final ProfiledPIDController translationController, rotationController;
 
     private Translation2d lastSetpoint;
     private final Pose2d goalPose;
+    private final int targetId;
 
-    public DriveToPoseCommand(Pose2d goalPose) {
+    private final PhotonPoseEstimator elevatorEstimator = new PhotonPoseEstimator(
+        VisionConstants.FIELD_LAYOUT, PhotonPoseEstimator.PoseStrategy.PNP_DISTANCE_TRIG_SOLVE, VisionConstants.ELEVATOR_SWERVE.transform());
+    private final PhotonPoseEstimator climberEstimator = new PhotonPoseEstimator(
+        VisionConstants.FIELD_LAYOUT, PhotonPoseEstimator.PoseStrategy.PNP_DISTANCE_TRIG_SOLVE, VisionConstants.CLIMBER_SWERVE.transform());
+
+    public DriveToPoseV2Command(int pole, Pose2d goalPose) {
         this.goalPose = goalPose;
 
         translationController = new ProfiledPIDController(
@@ -37,6 +46,8 @@ public class DriveToPoseCommand extends Command {
         );
         rotationController.setTolerance(ROTATION_ALIGNMENT_TOLERANCE);
         rotationController.enableContinuousInput(-Math.PI, Math.PI);
+
+        targetId = AutonomousConstants.getReefAprilTagForPole(pole);
 
         addRequirements(chassis);
     }
@@ -71,6 +82,7 @@ public class DriveToPoseCommand extends Command {
         lastSetpoint = currentPose.getTranslation();
 
         chassis.setAutoAligning(true);
+        Vision.getInstance().isolate(targetId);
     }
 
     @Override
@@ -78,7 +90,7 @@ public class DriveToPoseCommand extends Command {
         Pose2d currentPose = chassis.getPose();
         double distanceToGoalPose = currentPose.getTranslation().getDistance(goalPose.getTranslation());
 
-        double ffScaler = MathUtil.clamp((distanceToGoalPose - 0.2) / (0.8 - 0.2), 0.0, 1.0);
+        double ffScaler = MathUtil.clamp(distanceToGoalPose, 0.0, 1.0);
 
         translationController.reset(
             lastSetpoint.getDistance(goalPose.getTranslation()),
@@ -137,5 +149,7 @@ public class DriveToPoseCommand extends Command {
     public void end(boolean interrupted) {
         chassis.drive(new ChassisSpeeds());
         chassis.setAutoAligning(false);
+
+        Vision.getInstance().globalize();
     }
 }

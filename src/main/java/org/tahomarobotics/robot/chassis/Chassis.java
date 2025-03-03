@@ -24,6 +24,7 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
+import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.persistent.CalibrationData;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
@@ -57,6 +58,11 @@ public class Chassis extends SubsystemIF {
 
     @AutoLogOutput(key = "Chassis/Using Heading Fallback?")
     private boolean isUsingHeadingFallback = false;
+
+    @AutoLogOutput(key = "Chassis/Auto Aligning?")
+    private boolean autoAligning = false;
+    @AutoLogOutput(key = "Chassis/Auto Alignment Offset")
+    private double autoAligningOffset = 1;
 
     // State
 
@@ -112,7 +118,7 @@ public class Chassis extends SubsystemIF {
             VecBuilder.fill(0.02, 0.02, 0.02) // TODO: Verify
         );
 
-        accelerationLimiter = new SwerveDriveLimiter(getSwerveModuleStates(), ChassisConstants.ACCELERATION_LIMIT);
+        accelerationLimiter = new SwerveDriveLimiter(getSwerveModuleStates());
 
         odometryThread = new Thread(this::odometryThread);
         odometryThread.start();
@@ -257,6 +263,28 @@ public class Chassis extends SubsystemIF {
         resetOdometry(new Pose2d(getPose().getTranslation(), heading));
     }
 
+    public void setAutoAligning(boolean is) {
+        autoAligning = is;
+    }
+
+    public boolean isAutoAligning() {
+        return autoAligning;
+    }
+
+    public void setAutoAligningOffset(double offset) {
+        autoAligningOffset = offset;
+
+        AutonomousConstants.computePolePositions(Units.inchesToMeters(offset));
+    }
+
+    public void incrementAutoAligningOffset(double increment) {
+        setAutoAligningOffset(autoAligningOffset + increment);
+    }
+
+    public double getAutoAligningOffset() {
+        return autoAligningOffset;
+    }
+
     // -- Odometry --
 
     private void odometryThread() {
@@ -295,7 +323,7 @@ public class Chassis extends SubsystemIF {
 
         synchronized (pigeon) {
             var validYaw = getYaw();
-            isUsingHeadingFallback = validYaw.valid();
+            isUsingHeadingFallback = !validYaw.valid();
 
             if (validYaw.valid()) { // If pigeon yaw is valid, accept it as the real value
                 heading = validYaw.yaw();
