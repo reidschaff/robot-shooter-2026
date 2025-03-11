@@ -21,7 +21,6 @@ import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
-import org.tinylog.Logger;
 
 import java.util.List;
 
@@ -51,7 +50,7 @@ public class Grabber extends SubsystemIF {
     private final VoltageOut voltageControl = new VoltageOut(0);
 
     // Commands
-    private final Command windmillToStow = Windmill.getInstance().createTransitionCommand(WindmillConstants.TrajectoryState.STOW);
+    private final Command windmillToStow = Windmill.getInstance().createTransitionCommand(WindmillConstants.TrajectoryState.STOW, false);
 
     // State
 

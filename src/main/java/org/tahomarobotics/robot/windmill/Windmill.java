@@ -15,7 +15,10 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.RobotState;
-import edu.wpi.first.wpilibj.smartdashboard.*;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -88,8 +91,8 @@ public class Windmill extends SubsystemIF {
     // -- Initialization --
 
     /**
-     *   Arm Angle must be in units of Radians for the Robot.  The CTRE interfaces (control and feedback) are Rotations.  Only convert to and from Radians and
-     *   Rotations for those interfaces.
+     * Arm Angle must be in units of Radians for the Robot.  The CTRE interfaces (control and feedback) are Rotations.  Only convert to and from Radians and
+     * Rotations for those interfaces.
      */
     private Windmill() {
         // Create Hardware
@@ -357,9 +360,13 @@ public class Windmill extends SubsystemIF {
     }
 
     public Command createTransitionCommand(TrajectoryState to) {
+        return createTransitionCommand(to, true);
+    }
+
+    public Command createTransitionCommand(TrajectoryState to, boolean defaultCollect) {
         return Commands.deferredProxy(() -> {
             // Default to COLLECT if at target state (i.e. L4 -x> L4 -> COLLECT)
-            TrajectoryState target = targetTrajectoryState == to ? TrajectoryState.COLLECT : to;
+            TrajectoryState target = targetTrajectoryState == to && defaultCollect ? TrajectoryState.COLLECT : to;
 
             Optional<Command> output = WindmillMoveCommand.fromTo(targetTrajectoryState, target);
             if (output.isEmpty()) {
