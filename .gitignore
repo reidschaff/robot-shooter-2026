@@ -162,6 +162,7 @@ bin/
 *.iws
 .idea/*
 !.idea/codeStyles
+!.idea/copyright
 out/
 
 # Fleet
