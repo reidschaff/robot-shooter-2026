@@ -32,8 +32,10 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
@@ -63,12 +65,17 @@ public class Climber extends SubsystemIF {
     private final TalonFX climberRoller = new TalonFX(RobotMap.CLIMBER_ROLLER);
     private final VictorSPX ratchetSolenoid = new VictorSPX(RobotMap.CLIMBER_RATCHET_SOLENOID);
 
+    private final DigitalInput limitSwitch = new DigitalInput(RobotMap.CLIMBER_LIMIT_SWITCH);
+
+    private final boolean USE_LIMIT_SWITCH = false;
+
     // Status Signals
 
     private final LoggedStatusSignal[] statusSignals;
 
     private final StatusSignal<Current> climberMotorCurrent;
     private final StatusSignal<Current> climberFollowerCurrent;
+    private final StatusSignal<Current> climberRollerCurrent;
     private final StatusSignal<Angle> climberMotorPosition;
 
     // Control Requests
@@ -94,6 +101,8 @@ public class Climber extends SubsystemIF {
 
         climberMotorCurrent = climberMotor.getSupplyCurrent();
         climberFollowerCurrent = climberFollower.getSupplyCurrent();
+        climberRollerCurrent = climberRoller.getSupplyCurrent();
+
         climberMotorPosition = climberMotor.getPosition();
 
         statusSignals = new LoggedStatusSignal[]{
@@ -101,7 +110,7 @@ public class Climber extends SubsystemIF {
             new LoggedStatusSignal("Climber Follower Position", climberFollower.getPosition()),
             new LoggedStatusSignal("Climber Motor Current", climberMotorCurrent),
             new LoggedStatusSignal("Climber Follower Current", climberFollowerCurrent),
-            new LoggedStatusSignal("Climber Roller Current", climberRoller.getSupplyCurrent()),
+            new LoggedStatusSignal("Climber Roller Current", climberRollerCurrent),
             new LoggedStatusSignal("Climber Motor Voltage", climberMotor.getMotorVoltage()),
             new LoggedStatusSignal("Climber Follower Voltage", climberFollower.getMotorVoltage()),
             new LoggedStatusSignal("Climber Roller Voltage", climberRoller.getMotorVoltage())
@@ -122,9 +131,15 @@ public class Climber extends SubsystemIF {
                 runOnce(this::zeroPosition)
                     .andThen(
                         ClimberCommands
-                            .getClimberCommand()
+                            .getClimberCommand().onlyIf(RobotState::isTeleop)
                     ).onlyIf(() -> climbState.equals(ClimberState.ZEROED))
             );
+
+        // Climb on limit switch
+        new Trigger(() -> USE_LIMIT_SWITCH && isLimitSwitchPressed() && RobotState.isTeleop() && climbState == ClimberState.DEPLOYED)
+            .onTrue(Commands.waitSeconds(0.5).andThen(
+                ClimberCommands.getClimberCommand()
+            ));
 
         // Debug
         SmartDashboard.putData("Disengage Solenoid", runOnce(this::disengageSolenoid));
@@ -229,6 +244,15 @@ public class Climber extends SubsystemIF {
 
     public double getFollowerCurrent() {
         return climberFollowerCurrent.getValueAsDouble();
+    }
+
+    public double getRollersCurrent() {
+        return climberRollerCurrent.getValueAsDouble();
+    }
+
+    @AutoLogOutput(key = "Climber/Is Limit Switch Pressed?")
+    public boolean isLimitSwitchPressed() {
+        return !limitSwitch.get();
     }
 
     // -- Periodic --

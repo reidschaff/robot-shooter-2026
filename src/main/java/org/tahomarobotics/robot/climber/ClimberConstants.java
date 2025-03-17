@@ -40,7 +40,7 @@ public class ClimberConstants {
 
     public static final double RATCHET_SOLENOID_DEPLOY_PERCENTAGE = 1;
 
-    private static final double CLIMBER_MAX_VELOCITY = 0.375;
+    private static final double CLIMBER_MAX_VELOCITY = 0.125;
     private static final double CLIMBER_MAX_ACCELERATION = CLIMBER_MAX_VELOCITY * 4;
     private static final double CLIMBER_MAX_JERK = CLIMBER_MAX_ACCELERATION * 4;
 

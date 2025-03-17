@@ -28,10 +28,8 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
@@ -40,10 +38,9 @@ import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.game.GamePiece;
+import org.tahomarobotics.robot.util.identity.Identity;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
-import org.tahomarobotics.robot.windmill.Windmill;
-import org.tahomarobotics.robot.windmill.WindmillConstants;
 
 import java.util.List;
 
@@ -71,10 +68,6 @@ public class Grabber extends SubsystemIF {
     private final MotionMagicVelocityVoltage velocityControl = new MotionMagicVelocityVoltage(0).withEnableFOC(
         RobotConfiguration.RIO_PHOENIX_PRO);
     private final VoltageOut voltageControl = new VoltageOut(0);
-
-    // Commands
-    private final Command windmillToStow = (Windmill.getInstance().createTransitionCommand(WindmillConstants.TrajectoryState.STOW))
-        .onlyIf(() -> Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.COLLECT);
 
     // State
 
@@ -128,7 +121,9 @@ public class Grabber extends SubsystemIF {
 
     private void stateMachine() {
         if (state == GrabberState.COLLECTING) {
-            if (indexer.isBeanBakeTripped() && Collector.getInstance().getCollectionMode() != GamePiece.ALGAE) {
+            boolean isTripped = Identity.robotID == Identity.RobotIdentity.BEEF ? getCurrent() > COLLECTION_CURRENT_THRESHOLD : indexer.isBeanBakeTripped();
+
+            if (isTripped && Collector.getInstance().getCollectionMode() != GamePiece.ALGAE) {
                 collectionTimer.start();
 
                 belowTimer.reset();
@@ -142,10 +137,6 @@ public class Grabber extends SubsystemIF {
         }
 
         if (collectionTimer.hasElapsed(COLLECTION_DELAY)) {
-            if (RobotState.isTeleop()) {
-                windmillToStow.schedule();
-            }
-
             transitionToHolding();
             indexer.transitionToDisabled();
 

@@ -23,25 +23,44 @@
 package org.tahomarobotics.robot.auto;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import org.tahomarobotics.robot.auto.autos.FivePiece;
+import org.tahomarobotics.robot.auto.autos.Strait;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tinylog.Logger;
 
 public class Autonomous extends SubsystemIF {
     private static final Autonomous INSTANCE = new Autonomous();
 
+    private final Command cachedCommandLeftBlue, cachedCommandRightBlue;
+    private final Command cachedCommandLeftRed, cachedCommandRightRed;
     private final SendableChooser<Command> autoChooser;
 
     private Autonomous() {
         autoChooser = new SendableChooser<>();
         autoChooser.setDefaultOption("No-Op", Commands.none().withName("No-Op"));
 
-        autoChooser.addOption("5-Piece Left", Commands.deferredProxy(() -> new FivePiece(true)).withName("5-Piece Left"));
-        autoChooser.addOption("5-Piece Right", Commands.deferredProxy(() -> new FivePiece(false)).withName("5-Piece Right"));
+        cachedCommandLeftBlue = new FivePiece(true, DriverStation.Alliance.Blue).withName("5-Piece Left");
+        cachedCommandLeftRed = new FivePiece(true, DriverStation.Alliance.Red).withName("5-Piece Left");
+
+        cachedCommandRightBlue = new FivePiece(false, DriverStation.Alliance.Blue).withName("5-Piece Right");
+        cachedCommandRightRed = new FivePiece(false, DriverStation.Alliance.Red).withName("5-Piece Right");
+
+        autoChooser.addOption(
+            "5-Piece Left", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedCommandLeftRed : cachedCommandLeftBlue).withName("5-Piece Left")
+        );
+        autoChooser.addOption(
+            "5-Piece Right", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedCommandRightRed : cachedCommandRightBlue).withName("5-Piece Right")
+        );
+        autoChooser.addOption(
+            "Strait", Commands.deferredProxy(() -> new Strait(DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue))).withName("Strait")
+        );
 
         // Force-Load the reef positions
         AutonomousConstants.getNearestReefPoleScorePosition(new Pose2d().getTranslation()).approachPose().getX();

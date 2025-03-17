@@ -103,12 +103,19 @@ public class ChassisConstants {
 
     // Current Limits
 
-    private static final double DRIVE_SUPPLY_CURRENT_LIMIT = 50;
-    private static final double DRIVE_STATOR_CURRENT_LIMIT = 100;
+    private static final double DRIVE_SUPPLY_CURRENT_LIMIT = 80;
+    private static final double DRIVE_STATOR_CURRENT_LIMIT = 160;
     private static final double STEER_SUPPLY_CURRENT_LIMIT = 20;
     private static final double STEER_STATOR_CURRENT_LIMIT = 30;
 
     // Configuration
+
+    public static final CurrentLimitsConfigs teleopConfiguration =
+        new CurrentLimitsConfigs()
+            .withStatorCurrentLimitEnable(false)
+            .withSupplyCurrentLimitEnable(true)
+            .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
+            .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT);
 
     /** @return The configuration for the drive motor. */
     public static TalonFXConfiguration createDriveMotorConfiguration() {
@@ -122,9 +129,10 @@ public class ChassisConstants {
                     .withNeutralMode(NeutralModeValue.Brake)
                     .withInverted(InvertedValue.Clockwise_Positive)
             ).withCurrentLimits(
-                new CurrentLimitsConfigs()
-                    .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
-                    .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT)
+                teleopConfiguration
+//                new CurrentLimitsConfigs()
+//                    .withStatorCurrentLimitEnable(false)
+//                    .withSupplyCurrentLimitEnable(false)
             ).withAudio(
                 new AudioConfigs()
                     .withBeepOnBoot(true)

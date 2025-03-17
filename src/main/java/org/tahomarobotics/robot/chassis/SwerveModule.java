@@ -121,6 +121,8 @@ public class SwerveModule {
             new LoggedStatusSignal("Steer Velocity", steerVelocity),
             new LoggedStatusSignal("Drive Current", driveCurrent),
             new LoggedStatusSignal("Steer Current", steerCurrent),
+            new LoggedStatusSignal("Drive Voltage", driveMotor.getMotorVoltage()),
+            new LoggedStatusSignal("Steer Voltage", steerMotor.getMotorVoltage()),
             new LoggedStatusSignal("Encoder Position", steerEncoder.getPosition()),
             new LoggedStatusSignal("Encoder Velocity", steerEncoder.getVelocity())
         };

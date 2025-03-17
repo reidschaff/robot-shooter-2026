@@ -25,6 +25,7 @@ package org.tahomarobotics.robot.climber.commands;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import org.tahomarobotics.robot.climber.Climber;
+import org.tahomarobotics.robot.lights.LED;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tinylog.Logger;
 
@@ -45,6 +46,7 @@ public class ClimberCommands {
                                            .andThen(Commands.waitUntil(climber::isAtTargetPosition))
                                            .andThen(Commands.runOnce(climber::engageSolenoid));
                     case DEPLOYED -> Commands.runOnce(climber::climb)
+                                             .andThen(Commands.runOnce(() -> LED.getInstance().climb()))
                                              .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(Math.PI)))
                                              .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition))
                                              .andThen(Commands.waitUntil(climber::isAtTargetPosition))

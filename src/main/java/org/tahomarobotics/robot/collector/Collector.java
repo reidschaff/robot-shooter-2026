@@ -88,8 +88,8 @@ public class Collector extends SubsystemIF {
     private TargetDeploymentState targetDeploymentState = TargetDeploymentState.ZEROED;
     @AutoLogOutput(key = "Collector/Target Collector State")
     private TargetCollectorState targetCollectorState = TargetCollectorState.DISABLED;
-    @AutoLogOutput(key = "Game Piece Mode")
-    private GamePiece collectionMode;
+    @AutoLogOutput(key = "Collector/Game Piece Mode")
+    private GamePiece collectionMode = GamePiece.CORAL;
 
     // -- Initialization --
 
@@ -224,6 +224,10 @@ public class Collector extends SubsystemIF {
         }
     }
 
+    public void deploymentTransitionToAlgaeScore() {
+        setTargetDeploymentState(TargetDeploymentState.ALGAE_SCORE);
+    }
+
     private void deploymentCancelEjecting() {
         syncDeploymentControl();
     }
@@ -292,7 +296,10 @@ public class Collector extends SubsystemIF {
     // -- Combined Transitions --
 
     public void transitionToEjecting() {
-        deploymentTransitionToEjecting();
+        // If we eject while scoring algae keep the current position
+        if (targetDeploymentState != TargetDeploymentState.ALGAE_SCORE) {
+            deploymentTransitionToEjecting();
+        }
         collectorTransitionToEjecting();
     }
 
@@ -326,6 +333,8 @@ public class Collector extends SubsystemIF {
                     .onlyIf(() -> targetDeploymentState == TargetDeploymentState.ZEROED)
             );
 
+        setCollectionMode(GamePiece.CORAL);
+
         return this;
     }
 
@@ -344,7 +353,7 @@ public class Collector extends SubsystemIF {
     @Override
     public void onDisabledInit() {
         if (targetDeploymentState != TargetDeploymentState.ZEROED) {
-            deploymentTransitionToStow();
+            deploymentTransitionToCollect();
             collectorTransitionToDisabled();
         }
     }
@@ -371,6 +380,8 @@ public class Collector extends SubsystemIF {
     private boolean checkZeroingGuard() {
         if (targetDeploymentState == TargetDeploymentState.ZEROED) {
             Logger.error("Attempted to use collector prior to zeroing.");
+            CollectorCommands.createZeroCommand(this).schedule();
+
             return true;
         }
         return false;

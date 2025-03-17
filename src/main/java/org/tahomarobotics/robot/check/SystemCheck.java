@@ -31,6 +31,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
+import org.tahomarobotics.robot.climber.Climber;
+import org.tahomarobotics.robot.climber.commands.ClimberCommands;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -112,17 +114,23 @@ public class SystemCheck {
     }
 
     // Run Climber
-//    public static Command createClimberTestCommand(Climber climber) {
-//        return Commands.race(
-//            ensureNominal(
-//                new Measurement("Climber Lead", climber::getLeadCurrent, .025, .15),
-//                new Measurement("Climber Follow", climber::getFollowerCurrent, .025, .15)
-//            ),
-//            climber.runOnce(climber::deploy)
-//                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
-//                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
-//        );
-//    }
+    public static Command createClimberTestCommand(Climber climber) {
+        return Commands.race(
+            ensureNominal(
+                new Measurement("Climber Rollers", climber::getRollersCurrent, .025, .15),
+                new Measurement("Climber Lead", climber::getLeadCurrent, .025, .15),
+                new Measurement("Climber Follow", climber::getFollowerCurrent, .025, .15)
+            ),
+            ClimberCommands.getClimberCommand() // Stow -> Deploy
+                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                           .andThen(climber.runOnce(climber::runRollers))
+                           .andThen(Commands.waitSeconds(1))
+                           .andThen(climber.runOnce(climber::disableRollers))
+                           .andThen(ClimberCommands.getClimberCommand()) // Deploy -> Climb
+                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                           .onlyIf(() -> climber.getClimbState() == Climber.ClimberState.STOWED)
+        );
+    }
 
     // Elevator -> Stow to L3 -> Arm from 0 to PI -> Stow
     public static Command createWindmillTestCommand(Windmill windmill) {
@@ -213,7 +221,7 @@ public class SystemCheck {
         SmartDashboard.putData("Checks/Run Collector", createCollectorTestCommand(Collector.getInstance()));
         SmartDashboard.putData("Checks/Run Indexer", createIndexerTestCommand(Indexer.getInstance()));
         SmartDashboard.putData("Checks/Run Grabber", createGrabberTestCommand(Grabber.getInstance()));
-//        SmartDashboard.putData("Checks/Run Climber", createClimberTestCommand(Climber.getInstance()));
+        SmartDashboard.putData("Checks/Run Climber", createClimberTestCommand(Climber.getInstance()));
         SmartDashboard.putData("Checks/Run Windmill", createWindmillTestCommand(Windmill.getInstance()));
         SmartDashboard.putData("Checks/Run Chassis", createChassisTestCommand(Chassis.getInstance()));
         SmartDashboard.putData("Checks/Run Windmill Trajectories", createWindmillTrajectoryTestCommand(Windmill.getInstance()));

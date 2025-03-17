@@ -44,11 +44,9 @@ public class AutonomousConstants {
     public static final double DEFAULT_REEF_HORIZONTAL_ALIGNMENT_FUDGE = Units.inchesToMeters(0);
     public static final double FUDGE_INCREMENT = 0.25; // Inches
 
-    // Time in seconds after we start scoring the coral to give up on hitting the setpoint
-    public static final double SCORING_TIME = 0.25;
-
     // Translational Constraints in Meters
-    public static final TrapezoidProfile.Constraints TRANSLATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(2, 4);
+    public static final TrapezoidProfile.Constraints TRANSLATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(3, 4.125);
+    // TODO: OSCILLATIONS
     public static final double TRANSLATION_ALIGNMENT_KP = 5, TRANSLATION_ALIGNMENT_KI = 0, TRANSLATION_ALIGNMENT_KD = 0.25;
     public static final double X_TOLERANCE = Units.inchesToMeters(1.25);
     public static final double Y_TOLERANCE = Units.inchesToMeters(1.25);
@@ -56,6 +54,7 @@ public class AutonomousConstants {
 
     // Rotational Constraints in Radians
     public static final TrapezoidProfile.Constraints ROTATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(2 * Math.PI, 2 * Math.PI);
+    // TODO: OSCILLATIONS
     public static final double ROTATION_ALIGNMENT_KP = 5, ROTATION_ALIGNMENT_KI = 0, ROTATION_ALIGNMENT_KD = 0.5;
     public static final double ROTATION_ALIGNMENT_TOLERANCE = Units.degreesToRadians(0.25);
 
@@ -77,7 +76,6 @@ public class AutonomousConstants {
     );
 
     private static Translation2d RED_CORAL_STATION_RIGHT_TARGET, RED_CORAL_STATION_LEFT_TARGET, BLUE_CORAL_STATION_RIGHT_TARGET, BLUE_CORAL_STATION_LEFT_TARGET;
-    private static Translation2d RED_CORAL_STATION_RIGHT_WAYPOINT, RED_CORAL_STATION_LEFT_WAYPOINT, BLUE_CORAL_STATION_RIGHT_WAYPOINT, BLUE_CORAL_STATION_LEFT_WAYPOINT;
 
     public static List<Translation2d> RED_REEF_APPROACH_POLES;
     public static List<Translation2d> RED_REEF_SCORE_POLES;
@@ -97,13 +95,6 @@ public class AutonomousConstants {
 
         RED_CORAL_STATION_LEFT_TARGET = RED_ORIGIN.minus(BLUE_CORAL_STATION_LEFT_TARGET);
         RED_CORAL_STATION_RIGHT_TARGET = RED_ORIGIN.minus(BLUE_CORAL_STATION_RIGHT_TARGET);
-
-        // Approach Target Points
-        BLUE_CORAL_STATION_RIGHT_WAYPOINT = new Translation2d(2.7672, 1.35);
-        BLUE_CORAL_STATION_LEFT_WAYPOINT = new Translation2d(2.7672, VisionConstants.FIELD_LAYOUT.getFieldWidth() - 1.35);
-
-        RED_CORAL_STATION_LEFT_WAYPOINT = RED_ORIGIN.minus(BLUE_CORAL_STATION_LEFT_WAYPOINT);
-        RED_CORAL_STATION_RIGHT_WAYPOINT = RED_ORIGIN.minus(BLUE_CORAL_STATION_RIGHT_WAYPOINT);
     }
 
     public static void computePolePositions(double fudge) {
@@ -138,12 +129,10 @@ public class AutonomousConstants {
         Translation2d approach = currentTranslation.nearest(approachPoles);
         int index = approachPoles.indexOf(approach);
 
-        return getObjectiveForPole(index);
+        return getObjectiveForPole(index, alliance);
     }
 
-    public static Objective getObjectiveForPole(int poleIndex) {
-        DriverStation.Alliance alliance = getAlliance();
-
+    public static Objective getObjectiveForPole(int poleIndex, DriverStation.Alliance alliance) {
         var approachPoles = alliance == DriverStation.Alliance.Blue ? BLUE_REEF_APPROACH_POLES : RED_REEF_APPROACH_POLES;
         var scorePoles = alliance == DriverStation.Alliance.Blue ? BLUE_REEF_SCORE_POLES : RED_REEF_SCORE_POLES;
 
@@ -161,9 +150,7 @@ public class AutonomousConstants {
         return new Objective(tag, new Pose2d(approach, angle), new Pose2d(score, angle));
     }
 
-    public static Objective getObjectiveForCoralStation(boolean isLeft, Translation2d from) {
-        DriverStation.Alliance alliance = getAlliance();
-
+    public static Objective getObjectiveForCoralStation(boolean isLeft, Translation2d from, DriverStation.Alliance alliance) {
         Translation2d targetPosition = alliance == DriverStation.Alliance.Blue ?
             isLeft ? BLUE_CORAL_STATION_LEFT_TARGET : BLUE_CORAL_STATION_RIGHT_TARGET :
             isLeft ? RED_CORAL_STATION_LEFT_TARGET : RED_CORAL_STATION_RIGHT_TARGET;
@@ -171,7 +158,8 @@ public class AutonomousConstants {
         Rotation2d angle = targetPosition.minus(from).getAngle();
 
         return new Objective(
-            getObjectiveForPole((isLeft ? 'K' : 'D') - 'A').tag,
+//            getObjectiveForPole((isLeft ? 'K' : 'D') - 'A').tag,
+            -1,
             null,
             new Pose2d(targetPosition, angle)
         );
@@ -203,8 +191,8 @@ public class AutonomousConstants {
         public Objective fudgeY(double distance) {
             return new Objective(
                 tag,
-                approachPose.transformBy(new Transform2d(0, distance, new Rotation2d())),
-                scorePose.transformBy(new Transform2d(0, distance, new Rotation2d()))
+                approachPose.transformBy(new Transform2d(0, -distance, new Rotation2d())),
+                scorePose.transformBy(new Transform2d(0, -distance, new Rotation2d()))
             );
         }
     }

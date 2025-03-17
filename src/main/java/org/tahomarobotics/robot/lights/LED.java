@@ -24,12 +24,14 @@ package org.tahomarobotics.robot.lights;
 
 import com.ctre.phoenix.CANifier;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.util.Color;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.game.GamePiece;
 
+// TODO: Fix so that changing collection mode while climbing or ready for l4 doesnt override those lights.
 public class LED extends SubsystemIF {
     private static final LED INSTANCE = new LED();
 
@@ -49,7 +51,7 @@ public class LED extends SubsystemIF {
 
     @Override
     public SubsystemIF initialize() {
-        setColor(Color.kGold);
+        disable();
         return this;
     }
 
@@ -71,6 +73,10 @@ public class LED extends SubsystemIF {
         canifier.setLEDOutput(color.blue, CANifier.LEDChannel.LEDChannelC);
     }
 
+    public void disable() {
+        setColor(Color.kGold);
+    }
+
     public void coral() {
         setColor(Color.kCoral);
     }
@@ -80,6 +86,11 @@ public class LED extends SubsystemIF {
     }
 
     public void sync() {
+        if (RobotState.isDisabled()) {
+            disable();
+            return;
+        }
+
         if (Collector.getInstance().getCollectionMode() == GamePiece.CORAL) {
             coral();
         } else {
@@ -89,5 +100,9 @@ public class LED extends SubsystemIF {
 
     public void l4() {
         setColor(Color.kRed);
+    }
+
+    public void climb() {
+        setColor(Color.kGreen);
     }
 }

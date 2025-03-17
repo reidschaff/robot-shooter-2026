@@ -41,10 +41,14 @@ public class CollectorCommands {
         return collector.runOnce(() -> {
             if (collector.isDeploymentStowed()) {
                 collector.deploymentTransitionToCollect();
-            } else if (collector.isDeploymentCollecting()) {
+            } else {
                 collector.deploymentTransitionToStow();
             }
         });
+    }
+
+    public static Command createDeploymentAlgaeScoreCommand(Collector collector) {
+        return collector.runOnce(collector::deploymentTransitionToAlgaeScore);
     }
 
     public static Command createAutoCollectCommand(Collector collector) {

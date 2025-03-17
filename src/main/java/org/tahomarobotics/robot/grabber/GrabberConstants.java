@@ -47,7 +47,7 @@ public class GrabberConstants {
 
     static {
         COLLECTION_CURRENT_THRESHOLD = switch (Identity.robotID) {
-            case BEEF -> 18;
+            case BEEF -> 24;
             case BEARRACUDA -> 16;
             default -> 20;
         };

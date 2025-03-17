@@ -62,7 +62,7 @@ public class CollectorConstants {
     // States
 
     public static final double ALGAE_HOLDING_CURRENT_THRESHOLD = 30;
-    private static final double ALGAE_HOLDING_VOLTAGE = 2.5;
+    private static final double ALGAE_HOLDING_VOLTAGE = 3;
 
     // -- Identity --
 
@@ -110,6 +110,7 @@ public class CollectorConstants {
         STOW(Units.degreesToRotations(75)),
         CORAL_COLLECT(Units.degreesToRotations(-20.75)),
         ALGAE_COLLECT(Units.degreesToRotations(0)),
+        ALGAE_SCORE(Units.degreesToRotations(20)),
         EJECT(Units.degreesToRotations(-20.75));
 
         /** Angle of the deployment motors in rotations for this state. */

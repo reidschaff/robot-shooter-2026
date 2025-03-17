@@ -25,7 +25,6 @@ package org.tahomarobotics.robot;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.IterativeRobotBase;
 import edu.wpi.first.wpilibj.RobotState;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -67,8 +66,6 @@ public class Robot extends LoggedRobot {
         Grabber.getInstance().initialize(),
         OI.getInstance().initialize()
     );
-
-    private double autoStartTime;
 
     // Robot
 
@@ -163,18 +160,10 @@ public class Robot extends LoggedRobot {
         if (!autoCommand.isScheduled()) {
             Logger.info(autoCommand.getName() + " was canceled by another command before it ran.");
         }
-
-        autoStartTime = Timer.getTimestamp();
     }
 
     @Override
     public void autonomousPeriodic() {}
-
-    @Override
-    public void autonomousExit() {
-        double duration = Timer.getTimestamp() - autoStartTime;
-        Logger.info("Autonomous took {} seconds.", duration);
-    }
 
     // Teleop
 

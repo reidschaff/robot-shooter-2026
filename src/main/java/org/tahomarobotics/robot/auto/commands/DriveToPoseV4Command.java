@@ -130,6 +130,10 @@ public class DriveToPoseV4Command extends Command {
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/X Distance", getVerticalDistanceToWaypoint());
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Y Distance", getHorizontalDistanceToWaypoint());
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Target Waypoint", waypoints.get(targetWaypoint));
+
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vx", vx);
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vy", vy);
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vr", vr);
     }
 
     @Override

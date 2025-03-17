@@ -57,6 +57,7 @@ public final class RobotMap {
     public static final int CLIMBER_FOLLOWER = 20;
     public static final int CLIMBER_RATCHET_SOLENOID = 25;
     public static final int CLIMBER_ROLLER = 27;
+    public static final int CLIMBER_LIMIT_SWITCH = 1;
 
     public static final int LED = 26;
 

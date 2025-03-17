@@ -51,7 +51,6 @@ public class FivePiece extends SequentialCommandGroup {
     private static final double SCORING_DISTANCE = Units.inchesToMeters(3);
     private static final double ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(6);
     private static final double SCORING_TIME = 0.25;
-    private static final double COLLECT_TIMEOUT = 0.75;
 
     // -- Requirements --
 
@@ -63,23 +62,30 @@ public class FivePiece extends SequentialCommandGroup {
 
     // -- Determinants --
 
-    private final DriverStation.Alliance alliance = AutonomousConstants.getAlliance();
+    private final DriverStation.Alliance alliance;
 
     // -- Initialization --
 
-    public FivePiece(boolean isLeft) {
+    public FivePiece(boolean isLeft, DriverStation.Alliance alliance) {
         setName("Five-Piece " + (isLeft ? "Left" : "Right"));
+
+        this.alliance = alliance;
 
         Timer timer = new Timer();
         addCommands(
             Commands.runOnce(timer::restart),
             Commands.parallel(
-                // Assuming proper starting state, this will take one cycle.
+                // Assuming proper starting state, this will take several cycles.
                 WindmillCommands.createElevatorZeroCommand(Windmill.getInstance()),
                 CollectorCommands.createZeroCommand(Collector.getInstance())
             ),
+            // Assuming proper starting state, this will take one cycle.
+//            Commands.runOnce(() -> {
+//                windmill.calibrate();
+//                collector.zero();
+//            }),
             // Drive to our first scoring position then score
-            driveToPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && !isLeft ? Units.inchesToMeters(2) : 0),
+            driveToPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0),
             driveToCoralStationAndCollect(isLeft),
             // Drive to the second scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'K' : 'D'),
@@ -89,13 +95,26 @@ public class FivePiece extends SequentialCommandGroup {
             driveToCoralStationAndCollect(isLeft),
             // Drive to the fourth scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'A' : 'B'),
+            // Reset the robot upon finishing
+            Commands.parallel(
+                collector.runOnce(() -> {
+                    collector.collectorTransitionToDisabled();
+                    collector.deploymentTransitionToStow();
+                }),
+                indexer.runOnce(indexer::transitionToDisabled),
+                grabber.runOnce(grabber::transitionToDisabled)
+            ),
             Commands.runOnce(() -> Logger.info("Five-Piece completed in {} seconds.", timer.get()))
         );
     }
 
+    public Command driveToPoleThenScore(char pole) {
+        return driveToPoleThenScore(pole, () -> 0);
+    }
+
     public Command driveToPoleThenScore(char pole, DoubleSupplier fudge) {
         // Drive to the scoring position
-        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A').fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
+        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
 
         // Move arm from STOW to L4
         Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
@@ -109,16 +128,19 @@ public class FivePiece extends SequentialCommandGroup {
             dtp,
             dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4),
             dtp.runWhen(
-                () -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE && windmill.isAtTargetTrajectoryState(),
+                () -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE,
                 scoreGrabber.andThen(Commands.runOnce(() -> Logger.info("Scored grabber.")))
             )
         ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())));
     }
 
     public Command driveToPoleThenScoreWhileCollecting(char pole) {
+        return driveToPoleThenScoreWhileCollecting(pole, () -> 0);
+    }
 
+    public Command driveToPoleThenScoreWhileCollecting(char pole, DoubleSupplier fudge) {
         // Drive to the scoring position
-        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A').driveToPoseV4Command();
+        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
 
         // Move arm from STOW to L4
         Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
@@ -133,18 +155,16 @@ public class FivePiece extends SequentialCommandGroup {
             // Drive to the scoring position
             dtp,
             Commands
-                // Ensure we are collected by a specific timeout
                 .waitUntil(grabber::isHolding)
-                // Move the arm to stow once collected
-                .andThen(WindmillMoveCommand.fromTo(COLLECT, STOW).orElseThrow())
-                // TODO: Possibly disable the indexer and collector?
-                .withTimeout(COLLECT_TIMEOUT)
                 .andThen(Commands.parallel(
-                    // Score the coral if collected
-                    dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4),
-                    dtp.runWhen(() -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE, scoreGrabber),
-                    // Stay driving if collected, otherwise this command will finish and cancel the DTP command.
-                    Commands.idle().onlyWhile(grabber::isHolding)
+                    // Move the arm to stow once collected
+                    WindmillMoveCommand
+                        .fromTo(COLLECT, STOW).orElseThrow()
+                        .andThen(
+                            // Score the coral if collected
+                            dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4)
+                        ),
+                    dtp.runWhen(() -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE, scoreGrabber)
                 ))
         ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())));
     }
@@ -155,10 +175,10 @@ public class FivePiece extends SequentialCommandGroup {
             Commands.runOnce(timer::restart),
             // Drive to the coral station using the current translation of the chassis
             Commands.defer(
-                () -> AutonomousConstants.getObjectiveForCoralStation(isLeft, Chassis.getInstance().getPose().getTranslation()).driveToPoseV4Command(),
+                () -> AutonomousConstants.getObjectiveForCoralStation(isLeft, Chassis.getInstance().getPose().getTranslation(), alliance)
+                                         .driveToPoseV4Command(),
                 Set.of(chassis)
             ),
-            // Move the arm to STOW then COLLECT, to avoid hitting the arm on the reef.
             Commands.waitSeconds(0.5)
                     .andThen(WindmillMoveCommand.fromTo(L4, COLLECT).orElseThrow())
                     .andThen(grabber.runOnce(grabber::transitionToCollecting)),
@@ -184,7 +204,6 @@ public class FivePiece extends SequentialCommandGroup {
     //                }
     //
     //                if (coral == null) {
-    //                    // TODO: What do we do here...
     //                    return Commands.none().withName("No Coral Found");
     //                }
     //

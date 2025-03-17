@@ -60,8 +60,6 @@ public class WindmillMoveCommand extends Command {
     // Command
 
     private WindmillMoveCommand(Pair<TrajectoryState, TrajectoryState> fromTo, WindmillTrajectory trajectory) {
-        Logger.info("Created move command from {} to {}.", fromTo.getFirst(), fromTo.getSecond());
-
         this.fromTo = fromTo;
         this.trajectory = trajectory;
 
