@@ -228,25 +228,32 @@ public class OI extends SubsystemIF {
 
         // A - L2 / Low Algae De-score
         controller.a().onTrue(Commands.defer(
-            () -> windmill.createTransitionCommand(
-                collector.getCollectionMode() == GamePiece.CORAL ?
-                    WindmillConstants.TrajectoryState.L2 :
-                    WindmillConstants.TrajectoryState.LOW_DESCORE
-            ), Set.of(windmill)
+            () -> {
+                moveToL4OnAutoAlign = false;
+                return windmill.createTransitionCommand(
+                    collector.getCollectionMode() == GamePiece.CORAL ?
+                        WindmillConstants.TrajectoryState.L2 :
+                        WindmillConstants.TrajectoryState.LOW_DESCORE
+                );
+            }, Set.of(windmill)
         ));
 
         // B - L3 / High Algae De-score
         controller.b().onTrue(Commands.defer(
-            () -> windmill.createTransitionCommand(
-                collector.getCollectionMode() == GamePiece.CORAL ?
-                    WindmillConstants.TrajectoryState.L3 :
-                    WindmillConstants.TrajectoryState.HIGH_DESCORE
-            ), Set.of(windmill)
+            () -> {
+                moveToL4OnAutoAlign = false;
+                return windmill.createTransitionCommand(
+                    collector.getCollectionMode() == GamePiece.CORAL ?
+                        WindmillConstants.TrajectoryState.L3 :
+                        WindmillConstants.TrajectoryState.HIGH_DESCORE
+                );
+            }, Set.of(windmill)
         ));
 
         // X - Stow <-> Collect / Go to previous state if out of tolerance
         controller.x().onTrue(Commands.defer(
             () -> {
+                moveToL4OnAutoAlign = false;
                 if (windmill.isAtTargetTrajectoryState()) {
                     return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.COLLECT, WindmillConstants.TrajectoryState.STOW);
                 } else {
