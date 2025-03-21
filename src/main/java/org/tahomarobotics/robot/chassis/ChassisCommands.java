@@ -63,7 +63,7 @@ public class ChassisCommands {
 
         return chassis.runEnd(
             () -> {
-                double maxVelocity = Windmill.getInstance().isScoringCoral() ? ChassisConstants.SLOW_VELOCITY : ChassisConstants.MAX_VELOCITY;
+                double maxVelocity = ChassisConstants.MAX_VELOCITY;
 
                 double direction = DriverStation.getAlliance().orElse(null) == DriverStation.Alliance.Red ? -1.0 : 1.0;
 
