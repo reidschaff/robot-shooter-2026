@@ -139,7 +139,6 @@ public class DriveToPoseV4Command extends Command {
     @Override
     public boolean isFinished() {
         Translation2d robotToTarget = chassis.getPose().getTranslation().minus(waypoints.get(targetWaypoint).getTranslation());
-        Logger.info(robotToTarget);
         return (Math.abs(robotToTarget.getX()) < X_TOLERANCE
                 && Math.abs(robotToTarget.getY()) < Y_TOLERANCE
                 && r.atGoal());

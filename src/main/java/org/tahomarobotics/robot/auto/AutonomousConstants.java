@@ -30,12 +30,15 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
+import org.tahomarobotics.robot.auto.commands.DriveToPoseV5Command;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
+import org.tahomarobotics.robot.vision.Vision;
 import org.tahomarobotics.robot.vision.VisionConstants;
 import org.tinylog.Logger;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -44,12 +47,17 @@ public class AutonomousConstants {
     public static final double DEFAULT_REEF_HORIZONTAL_ALIGNMENT_FUDGE = Units.inchesToMeters(0);
     public static final double FUDGE_INCREMENT = 0.25; // Inches
 
+    // Spike marks to avoid in coral detection
+    public static final double SPIKE_MARK_X_DISTANCE = 1.8;
+    public static final double SPIKE_MARK_Y_DISTANCE = Units.inchesToMeters(80);
+    public static final double MAX_JUMP_DISTANCE = 0.35;
+
     // Translational Constraints in Meters
-    public static final TrapezoidProfile.Constraints TRANSLATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(3, 4.125);
+    public static final TrapezoidProfile.Constraints TRANSLATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(3.25, 4.375);
     // TODO: OSCILLATIONS
     public static final double TRANSLATION_ALIGNMENT_KP = 5, TRANSLATION_ALIGNMENT_KI = 0, TRANSLATION_ALIGNMENT_KD = 0.25;
     public static final double X_TOLERANCE = Units.inchesToMeters(1.25);
-    public static final double Y_TOLERANCE = Units.inchesToMeters(1.25);
+    public static final double Y_TOLERANCE = Units.inchesToMeters(1.50);
     public static final double TRANSLATION_ALIGNMENT_TOLERANCE = 0.025;
 
     // Rotational Constraints in Radians
@@ -186,12 +194,42 @@ public class AutonomousConstants {
             && (isLeft ? coralPosition.getY() > VisionConstants.FIELD_LAYOUT.getFieldWidth() - 3 : coralPosition.getY() < 3);
     }
 
+    public static boolean isCoralInField(Translation2d translation2d) {
+        double x = translation2d.getX();
+        double y = translation2d.getY();
+
+        return (x > 0) && (x < VisionConstants.FIELD_LAYOUT.getFieldLength()) && (y > 0) && (y < VisionConstants.FIELD_LAYOUT.getFieldWidth());
+    }
+
+    public static boolean isCoralOnSpikeMark(Translation2d coralPosition) {
+        DriverStation.Alliance alliance = getAlliance();
+        return ((alliance == DriverStation.Alliance.Blue) ?
+            (coralPosition.getX() < SPIKE_MARK_X_DISTANCE) :
+            (coralPosition.getX() > VisionConstants.FIELD_LAYOUT.getFieldLength() - SPIKE_MARK_X_DISTANCE))
+               && coralPosition.getY() > VisionConstants.FIELD_LAYOUT.getFieldWidth() / 2 - SPIKE_MARK_Y_DISTANCE
+               && coralPosition.getY() < VisionConstants.FIELD_LAYOUT.getFieldWidth() / 2 + SPIKE_MARK_Y_DISTANCE;
+    }
+
     public record Objective(int tag, Pose2d approachPose, Pose2d scorePose) {
         public DriveToPoseV4Command driveToPoseV4Command() {
             return new DriveToPoseV4Command(
                 tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
                 approachPose(),
                 scorePose()
+            );
+        }
+
+        public DriveToPoseV5Command driveToPoseV5Command() {
+            return new DriveToPoseV5Command(
+                -1,
+                () -> {
+                    Optional<Translation2d> translation = Vision.getInstance().getCoralPosition();
+                    if (translation.isEmpty()) return translation;
+
+                    // Don't accept coral position if it's on the spike mark
+                    return !isCoralOnSpikeMark(translation.get()) ? translation : Optional.empty();
+                },
+                scorePose().getTranslation()
             );
         }
 

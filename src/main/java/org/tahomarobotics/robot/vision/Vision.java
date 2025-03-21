@@ -28,6 +28,7 @@ import edu.wpi.first.networktables.*;
 import org.littletonrobotics.junction.Logger;
 import org.photonvision.PhotonUtils;
 import org.photonvision.simulation.VisionSystemSim;
+import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.SubsystemIF;
 
@@ -44,6 +45,8 @@ import java.util.stream.Stream;
  */
 public class Vision extends SubsystemIF implements AutoCloseable {
     private static final Vision INSTANCE = new Vision();
+
+    private static int coralUpdatesSinceSpike = 0;
 
     // State
 
@@ -134,6 +137,11 @@ public class Vision extends SubsystemIF implements AutoCloseable {
         // Get the chassis pose at the timestamp and transform to be field-to-coral
         Translation2d fieldToCoral = Chassis.getInstance().getPose().plus(new Transform2d(robotToCoral, Rotation2d.k180deg).inverse()).getTranslation();
         Logger.recordOutput("Vision/Coral Position", new Pose3d(new Translation3d(fieldToCoral), new Rotation3d()));
+
+        // Filter out all coral outside the field
+        if (!AutonomousConstants.isCoralInField(fieldToCoral)) {
+            return Optional.empty();
+        }
 
         return Optional.of(fieldToCoral);
     }

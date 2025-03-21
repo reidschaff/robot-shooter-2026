@@ -38,6 +38,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
+import org.tahomarobotics.robot.auto.commands.DriveToPoseV5Command;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisCommands;
 import org.tahomarobotics.robot.climber.Climber;
@@ -125,14 +126,8 @@ public class OI extends SubsystemIF {
                 () -> {
                     if (!RobotConfiguration.FEATURE_CORAL_DETECTION) { return Commands.runOnce(() -> Logger.warn("Coral detection is disabled!")); }
 
-                    var coralOpt = Vision.getInstance().getCoralPosition();
-                    if (coralOpt.isEmpty()) {
-                        return Commands.none();
-                    }
-
-                    return new DriveToPoseV4Command(
-                        -1, AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
-                        new Pose2d(coralOpt.get(), Chassis.getInstance().getPose().getRotation())
+                    return new DriveToPoseV5Command(
+                        -1, Vision.getInstance()::getCoralPosition, chassis.getPose().getTranslation()
                     );
                 }
             )

@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
 import org.tahomarobotics.robot.chassis.Chassis;
@@ -49,7 +50,7 @@ public class FivePiece extends SequentialCommandGroup {
 
     private static final double SCORING_DISTANCE = Units.inchesToMeters(3);
     private static final double ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(6);
-    private static final double SCORING_TIME = 0.1;
+    private static final double SCORING_TIME = 0.25;
 
     // -- Requirements --
 
@@ -75,13 +76,13 @@ public class FivePiece extends SequentialCommandGroup {
             Commands.runOnce(timer::restart),
             // Drive to our first scoring position then score
             driveToFirstPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0),
-            driveToCoralStationAndCollect(isLeft),
+            driveToCoralAndCollect(isLeft),
             // Drive to the second scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'K' : 'D'),
-            driveToCoralStationAndCollect(isLeft),
+            driveToCoralAndCollect(isLeft),
             // Drive to the third scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'L' : 'C'),
-            driveToCoralStationAndCollect(isLeft),
+            driveToCoralAndCollect(isLeft),
             // Drive to the fourth scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'A' : 'B'),
             // Reset the robot upon finishing
@@ -91,7 +92,7 @@ public class FivePiece extends SequentialCommandGroup {
                     collector.deploymentTransitionToStow();
                 }),
                 indexer.runOnce(indexer::transitionToDisabled),
-                grabber.runOnce(grabber::transitionToDisabled)
+                Commands.waitSeconds(0.25).andThen(grabber.runOnce(grabber::transitionToDisabled))
             ),
             Commands.runOnce(() -> Logger.info("Five-Piece completed in {} seconds.", timer.get()))
         );
@@ -181,28 +182,25 @@ public class FivePiece extends SequentialCommandGroup {
         ).andThen(Commands.runOnce(() -> Logger.info("Driving to coral station took {} seconds.", timer.get())));
     }
 
-    // -- Coral Detection Snippet --
+    public Command driveToCoralAndCollect(boolean isLeft) {
+        if (!RobotConfiguration.FEATURE_CORAL_DETECTION) {
+            return driveToCoralStationAndCollect(isLeft);
+        }
 
-    //                .onlyWhile(() -> Vision.getInstance().getCoralPosition().isEmpty()),
-    //            Commands.deferredProxy(() -> {
-    //                // Get the supposed position of the coral
-    //                Translation2d coral = null;
-    //                for (int i = 0; i < CORAL_DETECTION_RETRIES; i++) {
-    //                    var coralOpt = Vision.getInstance().getCoralPosition();
-    //                    if (coralOpt.isPresent() && !AutonomousConstants.isCoralInStationArea(coralOpt.get(), isLeft)) {
-    //                        coral = coralOpt.get();
-    //                        break;
-    //                    }
-    //                    Logger.error("[{}/{}] Could not find coral!", i, CORAL_DETECTION_RETRIES);
-    //                }
-    //
-    //                if (coral == null) {
-    //                    return Commands.none().withName("No Coral Found");
-    //                }
-    //
-    //                // Get angle between the chassis and the coral
-    //                Rotation2d angle = coral.minus(Chassis.getInstance().getPose().getTranslation()).getAngle();
-    //
-    //                return new DriveToPoseV4Command(objective.tag(), 0, new Pose2d(coral, angle)).withName("Drive to Coral");
-    //            }).onlyWhile(() -> !grabber.isHolding())
+        Timer timer = new Timer();
+        return Commands.parallel(
+            Commands.runOnce(timer::restart),
+            Commands.defer(
+                () -> AutonomousConstants.getObjectiveForCoralStation(isLeft, Chassis.getInstance().getPose().getTranslation(), alliance)
+                    .driveToPoseV5Command().withTimeout(5),
+                Set.of(chassis)
+            ).until(indexer::isBeanBakeTripped),
+            Commands.waitSeconds(0.6)
+                .andThen(WindmillMoveCommand.fromTo(L4, CORAL_COLLECT).orElseThrow())
+                .andThen(grabber.runOnce(grabber::transitionToCoralCollecting)),
+            // Collect from collector and indexer
+            collector.runOnce(collector::deploymentTransitionToCollect).andThen(collector.runOnce(collector::collectorTransitionToCollecting)),
+            indexer.runOnce(indexer::transitionToCollecting)
+        ).andThen(Commands.runOnce(() -> Logger.info("Driving to coral took {} seconds.", timer.get())));
+    }
 }

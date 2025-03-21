@@ -29,7 +29,7 @@ import java.io.File;
 public class RobotConfiguration {
     // -- Staging Feature Flags --
 
-    public static final boolean FEATURE_CORAL_DETECTION = false;
+    public static final boolean FEATURE_CORAL_DETECTION = true;
 
     // -- Deploy Directory --
     public static final File DEPLOY_DIR = Filesystem.getDeployDirectory();
