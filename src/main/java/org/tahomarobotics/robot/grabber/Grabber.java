@@ -150,7 +150,7 @@ public class Grabber extends SubsystemIF {
     private void stateMachine() {
         if (state == GrabberState.CORAL_COLLECTING) {
             if (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
-                if (isInRange()) {
+                if (isCollected()) {
                     transitionToCoralHolding();
                 }
             } else {
@@ -279,6 +279,13 @@ public class Grabber extends SubsystemIF {
         return state == GrabberState.MANUAL_SCORING
             || state == GrabberState.AUTO_SCORING
             || state == GrabberState.L1_SCORING;
+    }
+
+    public boolean isCollected() {
+        return state == GrabberState.CORAL_COLLECTING
+               && windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.CORAL_COLLECT
+               && windmill.isAtTargetTrajectoryState()
+               && isInRange();
     }
 
     public double getRange() {
