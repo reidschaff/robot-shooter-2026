@@ -126,9 +126,9 @@ public final class WindmillConstants {
 
     // Motion
 
-    public static final double ARM_MAX_VELOCITY = 1.50 * Math.PI; // Radians / sec
-    public static final double ARM_MAX_ACCELERATION = 10.0 * Math.PI; // Radians / sec^2
-    public static final double ARM_MAX_JERK = 416.5 * Math.PI; // Radians / sec^3
+    public static final double ARM_MAX_VELOCITY = 1.75 * Math.PI; // Radians / sec
+    public static final double ARM_MAX_ACCELERATION = 15.0 * Math.PI; // Radians / sec^2
+    public static final double ARM_MAX_JERK = 416.5 * Math.PI;  // Radians / sec^3
 
     public static final double ARM_ALGAE_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 1.4;
 
