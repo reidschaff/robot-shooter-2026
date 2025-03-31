@@ -135,7 +135,7 @@ public final class WindmillConstants {
     public static final double ARM_MAX_JERK = 416.5 * Math.PI;  // Radians / sec^3
 
     public static final double ARM_ALGAE_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 1.4;
-    public static final double ARM_ALGAE_THROW_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 3;
+    public static final double ARM_ALGAE_THROW_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 3.25;
 
     // Constants
 

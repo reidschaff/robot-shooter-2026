@@ -44,6 +44,8 @@ public class GrabberConstants {
 
     public static final double GEAR_REDUCTION;
 
+    public static final double ALGAE_THROW_DELAY = 0.0625;
+
     static {
         switch (Identity.robotID) {
             case BEEF, BEARRACUDA -> GEAR_REDUCTION = (1d / 9d);

@@ -117,7 +117,7 @@ public class WindmillCommands {
     public static Command createAlgaeThrowCommmand(Windmill windmill) {
         return WindmillMoveCommand.fromTo(WindmillConstants.TrajectoryState.ALGAE_PRESCORE, WindmillConstants.TrajectoryState.ALGAE_SCORE)
                                   .orElse(Commands.none())
-            .alongWith(GrabberCommands.createGrabberScoringCommands(grabber).getFirst());
+            .alongWith(Commands.waitSeconds(GrabberConstants.ALGAE_THROW_DELAY).andThen(GrabberCommands.createGrabberScoringCommands(grabber).getFirst()));
     }
 
     public static Command createScoreToHighAlgaeDescoreCommand(Windmill windmill) {
