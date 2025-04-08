@@ -328,7 +328,8 @@ public class OI extends SubsystemIF {
                     if (windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_PRESCORE) {
                         return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW);
                     }
-                    return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.ALGAE_PRESCORE);
+                    return Commands.runOnce(() -> collector.deploymentForceStateTransition(CollectorConstants.TargetDeploymentState.CORAL_COLLECT))
+                                   .alongWith(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.ALGAE_PRESCORE));
                 }
             }
         ));
