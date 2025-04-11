@@ -36,46 +36,32 @@ public final class WindmillConstants {
     // States
 
     public enum TrajectoryState {
-        HIGH_DESCORE(0.630, Units.degreesToRadians(130.693),
-                     Units.inchesToMeters(15.257), Units.degreesToRadians(127.820)),  // ALGAE: B button
-        LOW_DESCORE(0.254, Units.degreesToRadians(133.945),
-                    Units.inchesToMeters(0.815), Units.degreesToRadians(127.742)),  // ALGAE: A button
-        CORAL_COLLECT(0.445, Units.degreesToRadians(-96.15234375),
-                      Units.inchesToMeters(17.069), Units.degreesToRadians(-92.191)),  // CORAL: RS button toggle
-        STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913),
-             Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
-        ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211),
-                      0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
-        ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(-72.191),
-                      Units.inchesToMeters(42.344), Units.degreesToRadians(-72.191)),
-        ALGAE_PROCESSOR(0.567, Units.degreesToRadians(-61.566),
-                        0.567, Units.degreesToRadians(-61.566)),  // ALGAE: X button
-        ALGAE_PRESCORE(Units.inchesToMeters(39.244), Units.degreesToRadians(-60),
-                       Units.inchesToMeters(39.244), Units.degreesToRadians(-60)),  // ALGAE: Y button
-        ALGAE_SCORE(Units.inchesToMeters(42.344), Units.degreesToRadians(0),
-                    Units.inchesToMeters(42.344), Units.degreesToRadians(0)),  // ALGAE: Y button
-        L4(Units.inchesToMeters(42.344), Units.degreesToRadians(120.548),
-           Units.inchesToMeters(40.344), Units.degreesToRadians(120.548)),  // CORAL: Y button
-        L3(0.479, Units.degreesToRadians(125.551),
-           Units.inchesToMeters(17.500), Units.degreesToRadians(124.398)),  // CORAL: B button
-        L2(0.07375, Units.degreesToRadians(122.539),
-           Units.inchesToMeters(1.364), Units.degreesToRadians(124.791)),  // CORAL: A button
-        L1(0.6064453125, 4.1340782233518025,
-           0.572, Units.degreesToRadians(-121.465)),  // CORAL: X button
-        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089),
-              Units.inchesToMeters(0.468), Units.degreesToRadians(90.089));  // startup only
+        HIGH_DESCORE(0.630, Units.degreesToRadians(130.693)),  // ALGAE: B button
+        LOW_DESCORE(0.254, Units.degreesToRadians(133.945)),  // ALGAE: A button
+        CORAL_COLLECT(0.445, Units.degreesToRadians(-96.15234375)),  // CORAL: RS button toggle
+        STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
+        ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
+        ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(-72.191)),
+        ALGAE_PROCESSOR(0.567, Units.degreesToRadians(-61.566)),  // ALGAE: X button
+        ALGAE_PRESCORE(Units.inchesToMeters(39.244), Units.degreesToRadians(-60)),  // ALGAE: Y button
+        ALGAE_SCORE(Units.inchesToMeters(42.344), Units.degreesToRadians(0)),  // ALGAE: Y button
+        L4(Units.inchesToMeters(42.344), Units.degreesToRadians(120.548)),  // CORAL: Y button
+        L3(0.479, Units.degreesToRadians(125.551)),  // CORAL: B button
+        L2(0.07375, Units.degreesToRadians(122.539)),  // CORAL: A button
+        L1(0.6064453125, 4.1340782233518025),  // CORAL: X button
+        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089));  // startup only
 
         public final double elev;
         public final double arm;
         public final WindmillState state;
 
-        TrajectoryState(double elevAEE, double armAEE, double elevSEE, double armSEE) {
-            this.elev = (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? elevAEE : elevSEE;
-            this.arm = (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? armAEE : armSEE;
+        TrajectoryState(double elev, double arm) {
+            this.elev = elev;
+            this.arm = arm;
             this.state = new WindmillState(
                 0,
-                new WindmillState.ElevatorState(elev, 0, 0),
-                new WindmillState.ArmState(arm, 0, 0)
+                new WindmillState.ElevatorState(this.elev, 0, 0),
+                new WindmillState.ArmState(this.arm, 0, 0)
             );
         }
 
