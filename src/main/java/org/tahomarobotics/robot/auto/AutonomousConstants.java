@@ -31,6 +31,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV5Command;
+import org.tahomarobotics.robot.auto.commands.DriveToPoseV99Command;
 import org.tahomarobotics.robot.auto.commands.FasterDriveToPoseV4Command;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
 import org.tahomarobotics.robot.vision.Vision;
@@ -50,7 +51,7 @@ public class AutonomousConstants {
     public static final double FUDGE_INCREMENT = Units.inchesToMeters(0.25); // Inches
 
     // Spike marks to avoid in coral detection
-    public static final double SPIKE_MARK_X_DISTANCE = 1.8;
+    public static final double SPIKE_MARK_X_DISTANCE = 2.1;
     public static final double SPIKE_MARK_Y_DISTANCE = Units.inchesToMeters(80);
     public static final double MAX_JUMP_DISTANCE = 0.35;
 
@@ -65,7 +66,7 @@ public class AutonomousConstants {
     public static final double TRANSLATION_ALIGNMENT_TOLERANCE = 0.025;
 
     // Rotational Constraints in Radians
-    public static final TrapezoidProfile.Constraints ROTATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(2 * Math.PI, 2 * Math.PI);
+    public static final TrapezoidProfile.Constraints ROTATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(2 * Math.PI, 4 * Math.PI);
     // TODO: OSCILLATIONS
     public static final double ROTATION_ALIGNMENT_KP = 5, ROTATION_ALIGNMENT_KI = 0, ROTATION_ALIGNMENT_KD = 0.5;
     public static final double ROTATION_ALIGNMENT_TOLERANCE = Units.degreesToRadians(0.25);
@@ -103,6 +104,8 @@ public class AutonomousConstants {
     public static List<Translation2d> RED_REEF_SCORE_POLES;
     private static List<Translation2d> BLUE_REEF_APPROACH_POLES, BLUE_REEF_SCORE_POLES;
     public static List<Translation2d> RED_REEF_CENTER_POSITIONS, BLUE_REEF_CENTER_POSITIONS;
+
+    public static final Integer[] RED_REEF_TAGS = {6,7,8,9,10,11}, BLUE_REEF_TAGS = {17,18,19,20,21,22};
 
     static {
         computeCoralStationWaypoints();
@@ -278,6 +281,21 @@ public class AutonomousConstants {
             return new DriveToPoseV4Command(
                 tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
                 approachPose(),
+                scorePose()
+            );
+        }
+
+        public DriveToPoseV99Command driveToPoseV99Command() {
+            return new DriveToPoseV99Command(
+                tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                approachPose(),
+                scorePose()
+            );
+        }
+
+        public DriveToPoseV99Command driveToPoseV99CommandWithoutApproach() {
+            return new DriveToPoseV99Command(
+                tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
                 scorePose()
             );
         }

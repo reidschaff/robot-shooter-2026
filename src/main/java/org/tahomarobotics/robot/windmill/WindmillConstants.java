@@ -38,7 +38,7 @@ public final class WindmillConstants {
     public enum TrajectoryState {
         HIGH_DESCORE(0.630, Units.degreesToRadians(130.693)),  // ALGAE: B button
         LOW_DESCORE(0.254, Units.degreesToRadians(133.945)),  // ALGAE: A button
-        CORAL_COLLECT(0.445, Units.degreesToRadians(-96.15234375)),  // CORAL: RS button toggle
+        CORAL_COLLECT(0.411, Units.degreesToRadians(-91)),  // CORAL: RS button toggle
         STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
         ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
         ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(-72.191)),

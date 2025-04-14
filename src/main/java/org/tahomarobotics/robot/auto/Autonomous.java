@@ -23,6 +23,7 @@
 package org.tahomarobotics.robot.auto;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -41,13 +42,67 @@ import java.util.function.DoubleSupplier;
 public class Autonomous extends SubsystemIF {
     private static final Autonomous INSTANCE = new Autonomous();
 
-    private final Command cachedFivePieceCommandLeftBlue, cachedFivePieceCommandRightBlue;
-    private final Command cachedFivePieceCommandLeftRed, cachedFivePieceCommandRightRed;
-    private final Command cachedJackFivePieceCommandRightRed, cachedJackFivePieceCommandRightBlue;
-    private final Command cachedJackFivePieceCommandLeftRed, cachedJackFivePieceCommandLeftBlue;
-    private final SendableChooser<Command> autoChooser;
+    private Command cachedFivePieceCommandLeftBlue, cachedFivePieceCommandRightBlue;
+    private Command cachedFivePieceCommandLeftRed, cachedFivePieceCommandRightRed;
+    private Command cachedJackFivePieceCommandRightRed, cachedJackFivePieceCommandRightBlue;
+    private Command cachedJackFivePieceCommandLeftRed, cachedJackFivePieceCommandLeftBlue;
+    private SendableChooser<Command> autoChooser;
 
     private Autonomous() {
+        reloadAutos();
+    }
+
+    public static Autonomous getInstance() {
+        return INSTANCE;
+    }
+
+    public Command getSelectedAuto() {
+        return autoChooser.getSelected();
+    }
+
+    public Command assembleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
+        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
+        scorePositions.put('J', () -> 0);
+        scorePositions.put('K', () -> 0);
+        scorePositions.put('L', () -> 0);
+        scorePositions.put('A', () -> Units.inchesToMeters(-1));
+        return new AssembledAuto(isLeft, scorePositions, alliance, "6-Piece");
+    }
+
+    public Command assembleCompatibleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
+        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
+        scorePositions.put('I', () -> 0);
+        scorePositions.put('J', () -> 0);
+        scorePositions.put('K', () -> 0);
+        scorePositions.put('L', () -> 0);
+        return new FastAssembledAuto(isLeft, scorePositions, alliance, "Compatible 6-Piece");
+    }
+
+    public void onAutoChange(Command command) {
+        if (command == null) {
+            return;
+        }
+
+        Chassis chassis = Chassis.getInstance();
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
+        Pose2d startingPose = switch (command.getName()) {
+            case "6-Piece Left", "Compatible 6-Piece Left" ->
+                (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.FIVE_PIECE_LEFT_RED_START : AutonomousConstants.FIVE_PIECE_LEFT_BLUE_START;
+            case "6-Piece Right", "Compatible 6-Piece Right" ->
+                (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.FIVE_PIECE_RIGHT_RED_START : AutonomousConstants.FIVE_PIECE_RIGHT_BLUE_START;
+            case "Strait" -> (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.STRAIGHT_RED_START : AutonomousConstants.STRAIGHT_BLUE_START;
+            default -> chassis.getPose();
+        };
+
+        chassis.resetOdometry(startingPose);
+        Logger.info("Selected auto: " + command.getName());
+    }
+
+    private boolean isRedAlliance() {
+        return DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red;
+    }
+
+    public void reloadAutos() {
         autoChooser = new SendableChooser<>();
         autoChooser.setDefaultOption("No-Op", Commands.none().withName("No-Op"));
 
@@ -64,22 +119,22 @@ public class Autonomous extends SubsystemIF {
         cachedJackFivePieceCommandRightRed = assembleCompatibleFivePiece(false, DriverStation.Alliance.Red);
 
         autoChooser.addOption(
-            "5-Piece Left", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedFivePieceCommandLeftRed : cachedFivePieceCommandLeftBlue).withName("5-Piece Left")
+            "6-Piece Left", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedFivePieceCommandLeftRed : cachedFivePieceCommandLeftBlue).withName("6-Piece Left")
         );
         autoChooser.addOption(
-            "5-Piece Right", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedFivePieceCommandRightRed : cachedFivePieceCommandRightBlue).withName("5-Piece Right")
+            "6-Piece Right", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedFivePieceCommandRightRed : cachedFivePieceCommandRightBlue).withName("6-Piece Right")
         );
         autoChooser.addOption(
-            "Compatible 5-Piece Left",
+            "Compatible 6-Piece Left",
             Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedJackFivePieceCommandLeftRed : cachedJackFivePieceCommandLeftBlue).withName("Compatible 5-Piece Left")
+                cachedJackFivePieceCommandLeftRed : cachedJackFivePieceCommandLeftBlue).withName("Compatible 6-Piece Left")
         );
         autoChooser.addOption(
-            "Compatible 5-Piece Right",
+            "Compatible 6-Piece Right",
             Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedJackFivePieceCommandRightRed : cachedJackFivePieceCommandRightBlue).withName("Compatible 5-Piece Right")
+                cachedJackFivePieceCommandRightRed : cachedJackFivePieceCommandRightBlue).withName("Compatible 6-Piece Right")
         );
         autoChooser.addOption(
             "Strait", Commands.deferredProxy(() -> new Strait(DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue))).withName("Strait")
@@ -91,51 +146,5 @@ public class Autonomous extends SubsystemIF {
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
         autoChooser.onChange(this::onAutoChange);
-    }
-
-    public static Autonomous getInstance() {
-        return INSTANCE;
-    }
-
-    public Command getSelectedAuto() {
-        return autoChooser.getSelected();
-    }
-
-    public Command assembleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
-        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
-        scorePositions.put('J', () -> 0);
-        scorePositions.put('K', () -> 0);
-        scorePositions.put('L', () -> 0);
-        scorePositions.put('A', () -> 0);
-        return new AssembledAuto(isLeft, scorePositions, alliance, "Five-Piece");
-    }
-
-    public Command assembleCompatibleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
-        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
-        scorePositions.put('I', () -> 0);
-        scorePositions.put('J', () -> 0);
-        scorePositions.put('K', () -> 0);
-        scorePositions.put('L', () -> 0);
-        return new FastAssembledAuto(isLeft, scorePositions, alliance, "Compatible Five-Piece");
-    }
-
-    public void onAutoChange(Command command) {
-        if (command == null) {
-            return;
-        }
-
-        Chassis chassis = Chassis.getInstance();
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
-        Pose2d startingPose = switch (command.getName()) {
-            case "5-Piece Left", "Compatible 5-Piece Left" ->
-                (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.FIVE_PIECE_LEFT_RED_START : AutonomousConstants.FIVE_PIECE_LEFT_BLUE_START;
-            case "5-Piece Right", "Compatible 5-Piece Right" ->
-                (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.FIVE_PIECE_RIGHT_RED_START : AutonomousConstants.FIVE_PIECE_RIGHT_BLUE_START;
-            case "Strait" -> (alliance == DriverStation.Alliance.Red) ? AutonomousConstants.STRAIGHT_RED_START : AutonomousConstants.STRAIGHT_BLUE_START;
-            default -> chassis.getPose();
-        };
-
-        chassis.resetOdometry(startingPose);
-        Logger.info("Selected auto: " + command.getName());
     }
 }

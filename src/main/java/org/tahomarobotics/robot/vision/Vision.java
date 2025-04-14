@@ -144,8 +144,8 @@ public class Vision extends SubsystemIF implements AutoCloseable {
         return Optional.of(fieldToCoral);
     }
 
-    public void isolate(int tag) {
-        aprilTagCameras.values().forEach(c -> c.isolate(tag));
+    public void isolate(Integer... tags) {
+        aprilTagCameras.values().forEach(c -> c.isolate(tags));
     }
 
     public void globalize() {

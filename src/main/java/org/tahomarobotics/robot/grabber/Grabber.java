@@ -84,6 +84,7 @@ public class Grabber extends SubsystemIF {
     private final Timer belowTimer = new Timer();
 
     private final Debouncer coralDetectionDebouncer = new Debouncer(CORAL_COLLECTION_DELAY);
+    private final Debouncer coralDetectionDebouncer2 = new Debouncer(CORAL_INDEX_DELAY);
 
     // -- Initialization --
 
@@ -131,10 +132,10 @@ public class Grabber extends SubsystemIF {
 
     private void stateMachine() {
         if (state == GrabberState.CORAL_COLLECTING) {
-            if (coralDetectionDebouncer.calculate(indexer.isBeanBakeTripped()) && !collectingCoral) {
+            if (Windmill.getInstance().isAtTargetTrajectoryState() && coralDetectionDebouncer.calculate(indexer.isBeanBakeTripped()) && !collectingCoral) {
                 collectingCoral = true;
             }
-            if (!indexer.isBeanBakeTripped() && collectingCoral) {
+            if (coralDetectionDebouncer2.calculate(!indexer.isBeanBakeTripped()) && collectingCoral) {
                 transitionToCoralHolding();
             }
         } else if (state == GrabberState.ALGAE_COLLECTING && RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
@@ -187,7 +188,6 @@ public class Grabber extends SubsystemIF {
     public void transitionToCoralHolding() {
         collectingCoral = false;
         setTargetState(GrabberState.CORAL_HOLDING);
-        Indexer.getInstance().transitionToDisabled();
     }
 
     public void transitionToAlgaeHolding() {

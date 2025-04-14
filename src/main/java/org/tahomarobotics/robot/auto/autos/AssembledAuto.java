@@ -22,6 +22,7 @@
 
 package org.tahomarobotics.robot.auto.autos;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -29,14 +30,19 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import org.tahomarobotics.robot.RobotConfiguration;
+import org.tahomarobotics.robot.auto.Autonomous;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
-import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
+import org.tahomarobotics.robot.auto.commands.DriveToPoseV99Command;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.collector.CollectorCommands;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
+import org.tahomarobotics.robot.util.motion.MotionProfile;
 import org.tahomarobotics.robot.windmill.Windmill;
+import org.tahomarobotics.robot.windmill.WindmillConstants;
+import org.tahomarobotics.robot.windmill.WindmillState;
+import org.tahomarobotics.robot.windmill.WindmillTrajectory;
 import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 import org.tinylog.Logger;
 
@@ -50,15 +56,34 @@ import static org.tahomarobotics.robot.windmill.WindmillConstants.TrajectoryStat
 public class AssembledAuto extends SequentialCommandGroup {
     // -- Constants --
 
-    private static final double SCORING_DISTANCE = Units.inchesToMeters(2);
-    private static final double FIRST_ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(18);
-    private static final double ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(6);
+    private static final double SCORING_DISTANCE = Units.inchesToMeters(3);
+    private static final double FIRST_ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(36);
+    private static final double ARM_UP_DISTANCE = Units.inchesToMeters(32);
     private static final double ARM_DOWN_DISTANCE = Units.inchesToMeters(24);
 
     private static final double SCORING_TIME = 0.25;
+    private static final double SCORING_DELAY = 0.15;
     private static final double INDEX_TIMEOUT = 5;
     private static final double COLLECTION_TIMEOUT = 5;
     private static final double FIRST_SCORE_TIMEOUT = 5;
+
+
+    private static final WindmillTrajectory.WindmillConstraints CONSTRAINTS = new WindmillTrajectory.WindmillConstraints(
+        WindmillConstants.ARM_MAX_VELOCITY * 0.85,
+        WindmillConstants.ELEVATOR_MAX_VELOCITY / 2,
+        WindmillConstants.ARM_MAX_ACCELERATION,
+        WindmillConstants.ELEVATOR_MAX_ACCELERATION / 2,
+        WindmillConstants.ARM_MAX_JERK,
+        WindmillConstants.ELEVATOR_MAX_JERK / 2);
+    private static WindmillTrajectory collectToL4ButBetter;
+
+    static {
+        try {
+            collectToL4ButBetter = new WindmillTrajectory("COLLECT_TO_L4_BUT_REVERSE", new WindmillState[]{CORAL_COLLECT.state, L4.state}, CONSTRAINTS, true);
+        } catch (MotionProfile.MotionProfileException e) {
+            Logger.error("UH OH BAD THING(?) AUTO BROKEN OOPSIES.");
+        }
+    }
 
     // -- Requirements --
 
@@ -124,7 +149,8 @@ public class AssembledAuto extends SequentialCommandGroup {
                 indexer.runOnce(indexer::transitionToDisabled),
                 Commands.waitSeconds(0.25).andThen(grabber.runOnce(grabber::transitionToDisabled))
             ),
-            Commands.runOnce(() -> Logger.info("Five-Piece completed in {} seconds.", timer.get()))
+            Commands.runOnce(() -> Logger.info("Five-Piece completed in {} seconds.", timer.get())),
+            Commands.runOnce(() -> Autonomous.getInstance().reloadAutos())
         );
     }
 
@@ -134,33 +160,37 @@ public class AssembledAuto extends SequentialCommandGroup {
 
     public Command driveToFirstPoleThenScore(char pole, DoubleSupplier fudge) {
         // Drive to the scoring position
-        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
+        var dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV99CommandWithoutApproach();
+        AtomicBoolean cancel = new AtomicBoolean(false);
 
         // Move arm from STOW to L4
         Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
 
         // Score grabber
-        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME));
+        Command scoreGrabber = Commands.sequence(
+            Commands.waitSeconds(SCORING_DELAY),
+            grabber.runOnce(grabber::transitionToScoring),
+            Commands.waitSeconds(SCORING_TIME),
+            Commands.runOnce(() -> cancel.set(true))
+        );
         Command scoreGrabberTimeout = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME))
-                                             .onlyIf(
-                                                 () -> windmill.getTargetTrajectoryState() == L4 && windmill.isAtTargetTrajectoryState() && grabber.isHoldingCoral());
+                                             .onlyIf(this::shouldScore);
 
-        AtomicBoolean cancel = new AtomicBoolean(false);
         Timer timer = new Timer();
-        return Commands.parallel(
-                           Commands.runOnce(timer::restart),
-                           // Calibrate
-                           CollectorCommands.createZeroCommand(Collector.getInstance()),
-                           Commands.runOnce(windmill::calibrate),
-                           // Drive
-                           dtp.until(cancel::get),
-                           dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= FIRST_ARM_UP_DISTANCE, stowToL4),
-                           dtp.runWhen(
-                               () -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE + Units.inchesToMeters(1),
-                               scoreGrabber.andThen(Commands.runOnce(() -> Logger.info("Scored grabber.")).andThen(Commands.runOnce(() -> cancel.set(true))))
-                           )
-                       ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get()))).withTimeout(FIRST_SCORE_TIMEOUT)
-                       .andThen(scoreGrabberTimeout);
+        return (Commands
+            .parallel(
+                dtp.until(cancel::get),
+                Commands.runOnce(timer::restart),
+                // Calibrate
+                CollectorCommands.createZeroCommand(Collector.getInstance()),
+                Commands.runOnce(windmill::calibrate),
+                // Drive
+                dtp.runWhen(() -> dtp.distanceToEnd() <= FIRST_ARM_UP_DISTANCE, stowToL4),
+                dtp.runWhen(() -> dtp.distanceToEnd() <= SCORING_DISTANCE && shouldScore(), scoreGrabber)
+            ))
+            .andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())))
+            .withTimeout(FIRST_SCORE_TIMEOUT)
+            .andThen(scoreGrabberTimeout);
     }
 
     public Command driveToPoleThenScoreWhileCollecting(char pole) {
@@ -168,41 +198,57 @@ public class AssembledAuto extends SequentialCommandGroup {
     }
 
     public Command driveToPoleThenScoreWhileCollecting(char pole, DoubleSupplier fudge) {
+        boolean isLast = pole == 'A' || pole == 'B';
         // Drive to the scoring position
-        DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
+        var o = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble());
+        DriveToPoseV99Command dtp;
+        if (isLast) {
+            dtp = new DriveToPoseV99Command(
+//            (pole == 'A' || pole == 'B') ? - 1 : o.tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                o.tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                o.scorePose()
+            );
+        } else {
+            dtp = new DriveToPoseV99Command(
+//            (pole == 'A' || pole == 'B') ? - 1 : o.tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                o.tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                o.approachPose(),
+                o.scorePose()
+            );
+        }
+        AtomicBoolean cancel = new AtomicBoolean(false);
 
         // Move arm from STOW to L4
-        Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
+        Command l4 = isLast ? WindmillMoveCommand.fromTo(STOW, L4).orElseThrow() : new WindmillMoveCommand(Pair.of(CORAL_COLLECT, L4), collectToL4ButBetter);
 
         // Score grabber
-        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME));
+        Command scoreGrabber = Commands.sequence(
+            Commands.waitSeconds(SCORING_DELAY),
+            grabber.runOnce(grabber::transitionToScoring),
+            Commands.waitSeconds(SCORING_TIME),
+            Commands.runOnce(() -> cancel.set(true))
+        );
         Command scoreGrabberTimeout = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME))
-                                             .onlyIf(
-                                                 () -> windmill.getTargetTrajectoryState() == L4 && windmill.isAtTargetTrajectoryState() && grabber.isHoldingCoral());
+                                             .onlyIf(this::shouldScore);
 
-        AtomicBoolean cancel = new AtomicBoolean(false);
         Timer timer = new Timer();
-        return Commands.race(
-            // Run the timer until the commands are done
-            Commands.startRun(timer::restart, () -> {}),
-            // Drive to the scoring position
-            dtp.until(cancel::get).withTimeout(INDEX_TIMEOUT),
-            Commands
-                .waitUntil(grabber::isHoldingCoral)
-                .andThen(Commands.parallel(
-                    // Move the arm to stow once collected
-                    WindmillMoveCommand
-                        .fromTo(CORAL_COLLECT, STOW).orElseThrow()
-                        .andThen(
-                            // Score the coral if collected
-                            dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4)
-                        ),
-                    dtp.runWhen(
-                        () -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE,
-                        scoreGrabber.andThen(Commands.runOnce(() -> cancel.set(true)))
-                    )
-                ).onlyIf(() -> dtp.getDistanceToWaypoint() > ARM_DOWN_DISTANCE)) // Only move the arm and score the coral if it is safe to do so
-        ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get()))).andThen(scoreGrabberTimeout);
+        return Commands.parallel(
+                           // Drive to the scoring position
+                           dtp.until(cancel::get),
+                           Commands.runOnce(timer::restart),
+                           Commands
+                               .waitUntil(grabber::isHoldingCoral)
+                               .andThen(
+                                   // Move the arm to stow once collected.
+                                   (isLast ? WindmillMoveCommand.fromTo(CORAL_COLLECT, STOW).orElseThrow() : l4)
+                                       .andThen(
+                                           (isLast ? dtp.runWhen(() -> dtp.distanceToEnd() <= ARM_UP_DISTANCE, l4) : Commands.none()),
+                                           dtp.runWhen(() -> dtp.distanceToEnd() <= SCORING_DISTANCE && shouldScore(), scoreGrabber)
+                                       ).onlyIf(() -> dtp.distanceToEnd() > ARM_UP_DISTANCE)
+                               ) // Only move the arm and score the coral if it is safe to do so
+                       ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())))
+                       .withTimeout(INDEX_TIMEOUT)
+                       .andThen(scoreGrabberTimeout);
     }
 
     private Command driveToCoralStationAndCollect(boolean isLeft) {
@@ -210,14 +256,14 @@ public class AssembledAuto extends SequentialCommandGroup {
         return Commands.defer(
             () -> {
                 var dtp = AutonomousConstants.getObjectiveForCoralStation(isLeft, Chassis.getInstance().getPose().getTranslation(), alliance)
-                                             .driveToPoseV4Command();
+                                             .driveToPoseV99Command();
 
                 return Commands.parallel(
                     Commands.runOnce(timer::restart),
                     // Drive to the coral station using the current translation of the chassis
                     dtp.until(indexer::isBeanBakeTripped),
                     dtp.runWhen(
-                           () -> dtp.getDistanceFromStart() > ARM_DOWN_DISTANCE,
+                           () -> dtp.distanceToStart() > ARM_DOWN_DISTANCE,
                            WindmillMoveCommand.fromTo(L4, CORAL_COLLECT).orElseThrow()
                        )
                        .andThen(grabber.runOnce(grabber::transitionToCoralCollecting)),
@@ -257,5 +303,9 @@ public class AssembledAuto extends SequentialCommandGroup {
             },
             Set.of(chassis, windmill, grabber, collector, indexer)
         ).withTimeout(COLLECTION_TIMEOUT);
+    }
+
+    private boolean shouldScore() {
+        return windmill.getTargetTrajectoryState() == L4 && windmill.isAtTargetTrajectoryState() && grabber.isHoldingCoral();
     }
 }

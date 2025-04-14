@@ -26,21 +26,30 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.BlendedPath;
 import org.tahomarobotics.robot.util.motion.MotionProfile;
 import org.tahomarobotics.robot.util.motion.MotionState;
 import org.tahomarobotics.robot.util.motion.TrapezoidalMotionProfile;
 import org.tahomarobotics.robot.vision.Vision;
+import org.tahomarobotics.robot.vision.VisionConstants;
 import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 import static org.tahomarobotics.robot.auto.AutonomousConstants.*;
 
@@ -49,6 +58,10 @@ public class DriveToPoseV99Command extends Command {
     private final Chassis chassis = Chassis.getInstance();
 
     private final double blendingDistance;
+
+    private static final double BLEND = .2;
+    private static final double TURN_TIME = .5;
+    private static final double END_VELOCITY = .02;
 
     private BlendedPath path;
 
@@ -66,15 +79,40 @@ public class DriveToPoseV99Command extends Command {
     private final ProfiledPIDController r;
     private final int isolationTarget;
     private Translation2d point;
+    private final Optional<Pose3d> tagPose;
 
-    private boolean maintainVelocity = false;
+    private boolean isolate = true;
 
-    private static final double TIMEOUT = 2;
+    private double timeout = 2;
 
     public DriveToPoseV99Command(int isolationTarget, double blendingDistance, Pose2d... waypoints) {
         this.isolationTarget = isolationTarget;
         this.waypoints = Arrays.stream(waypoints).filter(Objects::nonNull).toArray(Pose2d[]::new);
         this.blendingDistance = blendingDistance;
+
+        timer = new Timer();
+
+        crossTrackController = new PIDController(8, 0, 0.5);
+        alongTrackController = new PIDController(3, 0, 0);
+
+        setpoint = new MotionState();
+        addRequirements(chassis);
+
+        r = new ProfiledPIDController(
+            ROTATION_ALIGNMENT_KP, ROTATION_ALIGNMENT_KI, ROTATION_ALIGNMENT_KD,
+            ROTATION_ALIGNMENT_CONSTRAINTS
+        );
+        r.setTolerance(ROTATION_ALIGNMENT_TOLERANCE);
+        r.enableContinuousInput(-Math.PI, Math.PI);
+        goalPose = waypoints[waypoints.length - 1];
+        tagPose = VisionConstants.FIELD_LAYOUT.getTagPose(isolationTarget);
+    }
+
+    public DriveToPoseV99Command(int isolationTarget, double blendingDistance, boolean isolate, Pose2d... waypoints) {
+        this.isolationTarget = isolationTarget;
+        this.waypoints = Arrays.stream(waypoints).filter(Objects::nonNull).toArray(Pose2d[]::new);
+        this.blendingDistance = blendingDistance;
+        this.isolate = isolate;
 
         timer = new Timer();
 
@@ -90,12 +128,17 @@ public class DriveToPoseV99Command extends Command {
         );
         r.setTolerance(ROTATION_ALIGNMENT_TOLERANCE);
         r.enableContinuousInput(-Math.PI, Math.PI);
-
+        goalPose = waypoints[waypoints.length - 1];
+        tagPose = VisionConstants.FIELD_LAYOUT.getTagPose(isolationTarget);
     }
-
 
     @Override
     public void initialize() {
+        if (RobotState.isAutonomous()) {
+            timeout = 0.5;
+        } else {
+            timeout = 2;
+        }
 
         // initialize state
         profileCompleted = false;
@@ -119,7 +162,6 @@ public class DriveToPoseV99Command extends Command {
         path = p.get();
 
         // get current velocity in direction of new path
-        goalPose = waypoints[waypoints.length - 1];
         direction = goalPose.getTranslation().minus(initialPose.getTranslation()).getAngle();
         double currentVelocity = velocityAlongPath(chassis.getFieldChassisSpeeds(), direction);
 
@@ -132,8 +174,8 @@ public class DriveToPoseV99Command extends Command {
             );
         } catch (MotionProfile.MotionProfileException e) {
             failed = true;
+            return;
         }
-
 
         // reset PID controllers and heading profile
         crossTrackController.reset();
@@ -144,8 +186,13 @@ public class DriveToPoseV99Command extends Command {
 
         // isolate to reef tag
         chassis.setAutoAligning(true);
-        Vision.getInstance().isolate(isolationTarget);
-
+        if (isolate) {
+            if (RobotConfiguration.FEATURE_REEF_ISOLATION) {
+                Vision.getInstance().isolate((DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red) ? RED_REEF_TAGS : BLUE_REEF_TAGS);
+            } else {
+                Vision.getInstance().isolate(isolationTarget);
+            }
+        }
 
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Waypoints", waypoints);
     }
@@ -168,6 +215,12 @@ public class DriveToPoseV99Command extends Command {
 
         // calculate feed-forward velocity components
         var currentPose = chassis.getPose();
+        if (tagPose.isPresent() && (profile.getEndTime() - t) > TURN_TIME) {
+            Translation2d positionDelta = currentPose.getTranslation().minus(tagPose.get().getTranslation().toTranslation2d());
+            r.setGoal(positionDelta.getAngle().getRadians());
+        } else {
+            r.setGoal(goalPose.getRotation().getRadians());
+        }
         double vr = r.calculate(currentPose.getRotation().getRadians());
 
         double vx, vy;
@@ -181,7 +234,7 @@ public class DriveToPoseV99Command extends Command {
         var pathError = positionError.rotateBy(direction.unaryMinus());
 
         double vCrossTrack = crossTrackController.calculate(pathError.getY(), 0d);
-        double vAlongTrack = MathUtil.clamp((t / profile.getEndTime() - 0.95) / 0.05, 0, 1) * alongTrackController.calculate(pathError.getX(), 0d);
+        double vAlongTrack = MathUtil.clamp((t - profile.getEndTime() + BLEND) / BLEND, 0, 1) * alongTrackController.calculate(pathError.getX(), 0d);
 
         var vel = new Translation2d(setpoint.velocity + vAlongTrack, vCrossTrack).rotateBy(direction);
         vx = vel.getX();
@@ -190,6 +243,7 @@ public class DriveToPoseV99Command extends Command {
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/v", setpoint.velocity);
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vx", vx);
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vy", vy);
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vr", vr);
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/target", new Pose2d(point, direction));
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vcross", vCrossTrack);
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/valong", vAlongTrack);
@@ -205,22 +259,24 @@ public class DriveToPoseV99Command extends Command {
     }
 
     public double getVelocityAlongPath() {
+        if (failed) return 0;
+
         return velocityAlongPath(chassis.getTargetFieldChassisSpeeds(), direction);
     }
 
     public double duration() {
+        if (failed) return Double.POSITIVE_INFINITY;
+
         return profile.getEndTime();
     }
 
-    public void maintainVelocity(boolean b) {
-        maintainVelocity = b;
+    public boolean notFailed() {
+        return !failed;
     }
 
     @Override
     public void end(boolean interrupted) {
-        if (!maintainVelocity) {
-            chassis.drive(new ChassisSpeeds(), true);
-        }
+        chassis.drive(new ChassisSpeeds(), true);
         chassis.setAutoAligning(false);
 
         Vision.getInstance().globalize();
@@ -234,11 +290,11 @@ public class DriveToPoseV99Command extends Command {
             return true;
         }
         if (profileCompleted) {
-            if (atPosition()) {
+            if (atPosition() && isStopped()) {
                 Logger.info("Successful DriveToPose");
                 return true;
             }
-            if (timer.hasElapsed(profile.getEndTime() + TIMEOUT)) {
+            if (timer.hasElapsed(profile.getEndTime() + timeout)) {
                 Logger.warn("DriveToPose timed out");
                 return true;
             }
@@ -251,11 +307,33 @@ public class DriveToPoseV99Command extends Command {
         return Math.abs(robotToTarget.getX()) < X_TOLERANCE && Math.abs(robotToTarget.getY()) < Y_TOLERANCE && r.atGoal();
     }
 
+    private boolean isStopped() {
+        return Math.abs(chassis.getChassisSpeeds().vxMetersPerSecond) < END_VELOCITY
+               && Math.abs(chassis.getChassisSpeeds().vxMetersPerSecond) < END_VELOCITY
+               && Math.abs(chassis.getChassisSpeeds().omegaRadiansPerSecond) < Units.degreesToRadians(20);
+    }
+
     public boolean isInitialized() {
         return timer.isRunning();
     }
 
     public double distanceToEnd() {
+        if (failed) {
+            return Double.POSITIVE_INFINITY;
+        }
+
         return chassis.getPose().getTranslation().getDistance(goalPose.getTranslation());
+    }
+
+    public double distanceToStart() {
+        if (failed) {
+            return 0;
+        }
+
+        return chassis.getPose().getTranslation().getDistance(initialPose.getTranslation());
+    }
+
+    public Command runWhen(BooleanSupplier condition, Command command) {
+        return Commands.waitUntil(condition).andThen(command);
     }
 }

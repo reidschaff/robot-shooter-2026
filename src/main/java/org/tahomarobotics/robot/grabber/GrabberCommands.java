@@ -34,20 +34,24 @@ import java.util.Set;
 
 public class GrabberCommands {
     public static Pair<Command, Command> createGrabberCommands(Grabber grabber) {
-        Command onTrue = Commands.defer(() -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
-            Commands.runOnce(grabber::transitionToPullingL1) :
-            Collector.getInstance().getCollectionMode().equals(GamePiece.CORAL) ?
-                Commands.runOnce(grabber::transitionToCoralCollecting).onlyIf(() -> !grabber.isHoldingAlgae()) :
-                Commands.runOnce(grabber::transitionToAlgaeCollecting).onlyIf(() -> !grabber.isHoldingAlgae()),
-            Set.of(grabber));
+        Command onTrue = Commands.defer(
+            () -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
+                Commands.runOnce(grabber::transitionToPullingL1) :
+                Collector.getInstance().getCollectionMode().equals(GamePiece.CORAL) ?
+                    Commands.runOnce(grabber::transitionToCoralCollecting).onlyIf(() -> !grabber.isHoldingAlgae()) :
+                    Commands.runOnce(grabber::transitionToAlgaeCollecting).onlyIf(() -> !grabber.isHoldingAlgae()),
+            Set.of(grabber)
+        );
         Command onFalse = grabber.runOnce(grabber::transitionToDisabled).onlyIf(() -> !grabber.isHoldingAlgae() && !grabber.algaeCollectionTimer.isRunning());
 
         return Pair.of(onTrue, onFalse);
     }
 
     public static Pair<Command, Command> createGrabberScoringCommands(Grabber grabber) {
-        Command onTrue = Commands.defer(() -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
-            Commands.runOnce(grabber::transitionToScoringL1) : Commands.runOnce(grabber::transitionToScoring), Set.of(grabber));
+        Command onTrue = Commands.defer(
+            () -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
+                Commands.runOnce(grabber::transitionToScoringL1) : Commands.runOnce(grabber::transitionToScoring), Set.of(grabber)
+        );
         Command onFalse = grabber.runOnce(grabber::transitionToDisabled).onlyIf(() -> !grabber.coralCollectionTimer.isRunning());
 
         return Pair.of(onTrue, onFalse);

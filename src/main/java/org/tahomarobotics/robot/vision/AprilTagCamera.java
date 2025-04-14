@@ -41,6 +41,7 @@ import org.photonvision.estimation.VisionEstimation;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
+import org.photonvision.struct.PhotonTrackedTargetSerde;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.photonvision.targeting.PnpResult;
@@ -51,8 +52,10 @@ import org.tahomarobotics.robot.util.persistent.CalibrationData;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.tahomarobotics.robot.vision.VisionConstants.*;
@@ -134,8 +137,7 @@ public class AprilTagCamera implements AutoCloseable {
     @AutoLogOutput(key = "Vision/{name}/AprilTag IDs")
     private int[] aprilTagIDs = new int[0];
 
-    @AutoLogOutput(key = "Vision/{name}/Isolated Tag")
-    private int isolationTarget = -1;
+    private Set<Integer> isolationTargets = Set.of();
 
     @AutoLogOutput(key = "Vision/{name}/Failed Updates")
     private int failedUpdates = 0;
@@ -246,31 +248,33 @@ public class AprilTagCamera implements AutoCloseable {
             return Optional.empty();
         }
 
-        if (isolationTarget > 0) {
+        if (!isolationTargets.isEmpty()) {
             isolationPoseEstimator.addHeadingData(
                 result.getTimestampSeconds(), chassisPose.map(p -> p.getRotation().toRotation2d()).orElseGet(Chassis.getInstance()::getHeading));
 
-            Optional<PhotonTrackedTarget> target_ = targets.stream().filter(t -> t.fiducialId == isolationTarget).findAny();
-            if (target_.isEmpty()) { return Optional.empty(); }
-            PhotonTrackedTarget target = target_.get();
+            List<PhotonTrackedTarget> filteredTargets = targets.stream().filter(
+                t -> isolationTargets.contains(t.fiducialId)).toList();
+            if (filteredTargets.isEmpty()) { return Optional.empty(); }
 
-            var est = isolationPoseEstimator.update(new PhotonPipelineResult(result.metadata, List.of(target), Optional.empty()));
-            Optional<EstimatedRobotPose> estimatedRobotPose = est.map(e -> new EstimatedRobotPose(
-                name, result.getTimestampSeconds(),
-                EstimatedRobotPose.Type.ISOLATED_SINGLE_TAG,
-                e.estimatedPose.toPose2d(),
-                BASE_ISOLATED_SINGLE_TAG_STD_DEV,
-                List.of(target)
-            ));
-            publishTags(chassisPose, List.of(target));
+            for (PhotonTrackedTarget target : filteredTargets) {
+                var est = isolationPoseEstimator.update(new PhotonPipelineResult(result.metadata, List.of(target), Optional.empty()));
+                Optional<EstimatedRobotPose> estimatedRobotPose = est.map(e -> new EstimatedRobotPose(
+                    name, result.getTimestampSeconds(),
+                    EstimatedRobotPose.Type.ISOLATED_SINGLE_TAG,
+                    e.estimatedPose.toPose2d(),
+                    BASE_ISOLATED_SINGLE_TAG_STD_DEV,
+                    List.of(target)
+                ));
+                publishTags(chassisPose, List.of(target));
 
-            if (estimatedRobotPose.isPresent()) {
-                singleTagPose = estimatedRobotPose.get().pose();
-                singleTagUpdates++;
-            } else {
-                failedUpdates++;
+                if (estimatedRobotPose.isPresent()) {
+                    singleTagPose = estimatedRobotPose.get().pose();
+                    singleTagUpdates++;
+                } else {
+                    failedUpdates++;
+                }
+                return estimatedRobotPose;
             }
-            return estimatedRobotPose;
         }
 
         publishTags(chassisPose, targets);
@@ -457,13 +461,14 @@ public class AprilTagCamera implements AutoCloseable {
     }
 
     // Setters
-
-    void isolate(int tag) {
-        isolationTarget = tag;
+    void isolate(Integer...  tags) {
+        isolationTargets = Set.of(tags);
+        org.littletonrobotics.junction.Logger.recordOutput("Vision/" + name + "/Isolation Tags", Arrays.stream(tags).mapToInt(Integer::intValue).toArray());
     }
 
     void globalize() {
-        isolationTarget = -1;
+        isolationTargets = Set.of();
+        org.littletonrobotics.junction.Logger.recordOutput("Vision/" + name + "/Isolation Tags", new int[]{});
     }
 
     // Configuration

@@ -60,7 +60,7 @@ public class WindmillMoveCommand extends Command {
     private boolean isProfileDone = false;
     // Command
 
-    private WindmillMoveCommand(Pair<TrajectoryState, TrajectoryState> fromTo, WindmillTrajectory trajectory) {
+    public WindmillMoveCommand(Pair<TrajectoryState, TrajectoryState> fromTo, WindmillTrajectory trajectory) {
         this.fromTo = fromTo;
         this.trajectory = trajectory;
 

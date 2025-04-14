@@ -68,13 +68,13 @@ public class DriveToPoseV5Command extends Command {
 
         x = new ProfiledPIDController(
             TRANSLATION_ALIGNMENT_KP, TRANSLATION_ALIGNMENT_KI, TRANSLATION_ALIGNMENT_KD,
-            TELEOP_TRANSLATION_ALIGNMENT_CONSTRAINTS
+            FASTER_AUTO_TRANSLATION_ALIGNMENT_CONSTRAINTS
         );
         x.setTolerance(0);
 
         y = new ProfiledPIDController(
             TRANSLATION_ALIGNMENT_KP, TRANSLATION_ALIGNMENT_KI, TRANSLATION_ALIGNMENT_KD,
-            TELEOP_TRANSLATION_ALIGNMENT_CONSTRAINTS
+            FASTER_AUTO_TRANSLATION_ALIGNMENT_CONSTRAINTS
         );
         y.setTolerance(0);
 
@@ -136,7 +136,7 @@ public class DriveToPoseV5Command extends Command {
         // Logging
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/X Distance", getVerticalDistanceToWaypoint());
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Y Distance", getHorizontalDistanceToWaypoint());
-        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Target Waypoint", targetTranslation);
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/Target Waypoint", new Pose2d(targetTranslation, new Rotation2d()));
 
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vx", vx);
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vy", vy);

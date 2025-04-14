@@ -25,7 +25,6 @@ package org.tahomarobotics.robot;
 import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -378,7 +377,7 @@ public class OI extends SubsystemIF {
                             );
                             return Commands.parallel(
                                 dtp.andThen(Commands.waitSeconds(0.75)).finallyDo(grabber::transitionToDisabled),
-                                Commands.runOnce(() -> Logger.info("john movin to pole w {}s time", dtp.duration())),
+                                Commands.runOnce(() -> Logger.info("john movin' to pole w {}s time", dtp.duration())),
                                 Commands.waitUntil(() -> dtp.distanceToEnd() < STOW_TO_L4_DISTANCE)
                                         .andThen(stowToL4)
                                         .onlyIf(
@@ -387,7 +386,7 @@ public class OI extends SubsystemIF {
                                         .andThen(Commands.waitUntil(
                                                              () -> windmill.isAtTargetTrajectoryState() && windmill.getTargetTrajectoryState().shouldAutoScore())
                                                          .andThen(grabber.runOnce(grabber::transitionToScoring)))
-                            );
+                            ).onlyWhile(dtp::notFailed);
                         }, Set.of(chassis)
                     )
                 ).andThen(scoreToDescore.onlyIf(windmill::willDescore));

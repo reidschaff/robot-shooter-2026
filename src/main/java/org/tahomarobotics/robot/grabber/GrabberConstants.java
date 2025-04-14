@@ -37,6 +37,7 @@ public class GrabberConstants {
     public static final double ALGAE_HOLD_VOLTAGE = -1.35;
 
     public static final double CORAL_COLLECTION_DELAY = 0.02;
+    public static final double CORAL_INDEX_DELAY = 0.02;
     public static final double ALGAE_COLLECTION_DELAY = 0.1;
 
     public static final double GEAR_REDUCTION;
