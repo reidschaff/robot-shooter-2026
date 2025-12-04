@@ -28,29 +28,11 @@ import edu.wpi.first.wpilibj.Filesystem;
 import java.io.File;
 
 public class RobotConfiguration {
-    // -- Staging Feature Flags --
-
-    private static final DigitalInput isClimberEnabled = new DigitalInput(RobotMap.CLIMBER_ENABLED_JUMPER);
-
-    public static boolean isClimberEnabled() {
-        return isClimberEnabled.get();
-    }
-
-    public static final boolean FEATURE_CORAL_DETECTION = true;
-    public static final boolean FEATURE_ALGAE_END_EFFECTOR = true;
-    public static final boolean FEATURE_LIMIT_SWITCH = true;
-    public static final boolean FEATURE_REEF_ISOLATION = true;
-
     // -- Deploy Directory --
     public static final File DEPLOY_DIR = Filesystem.getDeployDirectory();
 
     // -- Devices --
     public static final String CANBUS_NAME = "CANivore";
-
-    // -- Phoenix Pro Toggles --
-    public static final boolean CANIVORE_PHOENIX_PRO = true;
-    public static final boolean WINDMILL_PHOENIX_PRO = true;
-    public static final boolean RIO_PHOENIX_PRO = false;
 
     // -- Update Frequencies --
     public static final double ODOMETRY_UPDATE_FREQUENCY = 250;

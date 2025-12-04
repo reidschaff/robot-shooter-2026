@@ -24,6 +24,7 @@ package org.tahomarobotics.robot;
 
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.IterativeRobotBase;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
@@ -35,19 +36,7 @@ import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-import org.tahomarobotics.robot.auto.Autonomous;
-import org.tahomarobotics.robot.chassis.Chassis;
-import org.tahomarobotics.robot.check.SystemCheck;
-import org.tahomarobotics.robot.climber.Climber;
-import org.tahomarobotics.robot.collector.Collector;
-import org.tahomarobotics.robot.grabber.Grabber;
-import org.tahomarobotics.robot.indexer.Indexer;
-import org.tahomarobotics.robot.lights.LED;
-import org.tahomarobotics.robot.util.ImmutableLazyOptionalMap;
-import org.tahomarobotics.robot.util.SubsystemIF;
-import org.tahomarobotics.robot.vision.Vision;
-import org.tahomarobotics.robot.windmill.Windmill;
-import org.tahomarobotics.robot.windmill.commands.WindmillTrajectories;
+import org.tahomarobotics.robot.util.AbstractSubsystem;
 import org.tinylog.Logger;
 
 import java.util.ArrayList;
@@ -55,46 +44,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Robot extends LoggedRobot {
-    // Subsystems
 
-    private final List<SubsystemIF> subsystems;
+    private final RobotContainer robotContainer;
 
     // Robot
 
-    public Robot() {
+    private Robot() {
+        this(new RobotContainer());
+    }
+
+    public Robot(RobotContainer robotContainer) {
+        this.robotContainer = robotContainer;
         // Disable watchdogs
         disableWatchdog(this, IterativeRobotBase.class);
         disableWatchdog(CommandScheduler.getInstance(), CommandScheduler.class);
-
-        List<SubsystemIF> subsystems = new ArrayList<>();
-
-        subsystems.add(LED.getInstance().initialize());
-        subsystems.add(Chassis.getInstance().initialize());
-        subsystems.add(Autonomous.getInstance().initialize());
-        subsystems.add(Vision.getInstance().initialize());
-        subsystems.add(Windmill.getInstance().initialize());
-        subsystems.add(Indexer.getInstance().initialize());
-        subsystems.add(Collector.getInstance().initialize());
-        subsystems.add(Grabber.getInstance().initialize());
-        subsystems.add(OI.getInstance().initialize());
-
-        if (RobotConfiguration.isClimberEnabled()) {
-            subsystems.add(Climber.getInstance().initialize());
-        }
-        this.subsystems = subsystems.stream().collect(Collectors.toUnmodifiableList());
-
-        // Auto log outputs
-        subsystems.forEach(AutoLogOutputManager::addObject);
 
         // Log various aspects of our robot
         logCommandScheduler();
         // TODO: Possibly need a warmup command for record logging.
         configureAdvantageKit();
-
-        // Preload Trajectories
-        // TODO: Lazy load them so they don't impact startup times
-        WindmillTrajectories.initialize();
-        SystemCheck.initialize();
 
         // Simulate Helper Commands
         SmartDashboard.putData(
@@ -147,8 +115,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         Logger.warn("--- Disabled ---");
-
-        subsystems.forEach(SubsystemIF::onDisabledInit);
     }
 
     @Override
@@ -159,16 +125,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         Logger.info("--- Autonomous Initialized ---");
-
-        subsystems.forEach(SubsystemIF::onAutonomousInit);
-
-        Command autoCommand = Autonomous.getInstance().getSelectedAuto();
-        Logger.info("Running Auto: " + autoCommand.getName());
-
-        autoCommand.schedule();
-        if (!autoCommand.isScheduled()) {
-            Logger.info(autoCommand.getName() + " was canceled by another command before it ran.");
-        }
     }
 
     @Override
@@ -179,8 +135,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void teleopInit() {
         Logger.info("--- TeleOp Initialized ---");
-
-        subsystems.forEach(SubsystemIF::onTeleopInit);
     }
 
     @Override
@@ -191,8 +145,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void testInit() {
         Logger.info("--- Test Initialized ---");
-
-        OI.getInstance().initializeSysId();
     }
 
     @Override
@@ -200,14 +152,12 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void testExit() {
-        OI.getInstance().cleanUpSysId();
     }
 
     // Simulation
 
     @Override
     public void simulationInit() {
-        subsystems.forEach(SubsystemIF::onSimulationInit);
     }
 
     @Override
@@ -236,5 +186,9 @@ public class Robot extends LoggedRobot {
             );
             Logger.warn("Disabled " + inst.getClass() + "'s watchdog!");
         } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+    }
+
+    public static void main(String... args) {
+        RobotBase.startRobot(Robot::new);
     }
 }

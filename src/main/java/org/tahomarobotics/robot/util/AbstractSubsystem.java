@@ -1,5 +1,7 @@
 /*
- * Copyright 2025 Tahoma Robotics
+ * MIT License
+ *
+ * Copyright (c) 2025 Bear Metal
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -8,33 +10,37 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-package org.tahomarobotics.robot.util.identity;
+package org.tahomarobotics.robot.util;
 
-public class Identity {
-    public static RobotIdentity robotID;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-    @SuppressWarnings("ALL")
-    public enum RobotIdentity {
-        BETA("00:80:2f:32:fd:29"),
-        BEEF("00:80:2f:40:6a:02"),
-        BEARRACUDA("00:80:2f:33:04:f9");
+public abstract class AbstractSubsystem extends SubsystemBase {
 
-        private final String addr;
+    private final String name;
 
-        private RobotIdentity(String addr) {
-            this.addr = addr;
-        }
+    public AbstractSubsystem() {
+        name = this.getClass().getSimpleName();
     }
+
+    public final void periodic() {
+        this.subsystemPeriodic();
+//        ExecutionTimeLogger.logExecutionTime("Subsystem/" + name, this::subsystemPeriodic);
+    }
+
+    // WARNING - this function is not currently used
+    public final void simulationPeriodic() {}
+
+    public abstract void subsystemPeriodic();
 }
