@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2025 Tahoma Robotics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,4 +26,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 
 public final class RobotMap {
     public final static int PIGEON = 0; // Internal IMU. Will not be used in Extra Programming Projects (Robot)
+
+    public final static int PIVOT_MOTOR = 1;
+    public final static int FLYWHEEL_MOTOR = 2;
+    public final static int PASSTHROUGH_MOTOR = 3;
 }
