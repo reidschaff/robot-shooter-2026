@@ -22,26 +22,14 @@
 
 package org.tahomarobotics.robot;
 
-import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import org.tinylog.Logger;
-
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
+import org.tahomarobotics.robot.shooter.Shooter;
 
 public class OI {
+    private final Shooter shooter = Shooter.getInstance();
 
     // -- Constants --
 
@@ -66,6 +54,7 @@ public class OI {
     // -- Bindings --
 
     public void configureControllerBindings() {
+        //controller.rightTrigger().onTrue();
     }
 
     public void configureLessImportantControllerBindings() {
