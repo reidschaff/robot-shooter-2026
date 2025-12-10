@@ -44,40 +44,30 @@ public class Comands extends SubsystemBase {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(45)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(300)));
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
+        Logger.recordOutput("Pivot.angle",45);
+        Logger.recordOutput("FlywheelMotor.SPEED",300);
+        Logger.recordOutput("PassthroughMotor.SPEED",-50);
     }
     public void FIRE () {
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
-        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));    }
+        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
+        Logger.recordOutput("PassthroughMotor.SPEED",50);
+        Logger.recordOutput("FlywheelMotor.SPEED",-300);
+    }
 public void angle90 (){
     Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
     FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
+    Logger.recordOutput("Pivot.angle",90);
+    Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
     public void angle135 (){
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
+        Logger.recordOutput("Pivot.angle",135);
+        Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
-    //Drive RT - Spin flywheel motor to 300 RPS and run passthrough motor clockwise to feed piece into shooter
-
-
-
 }
 
 
 
-public class Climber extends SubsystemBase {
-    // Hello welcome to the Climber section comments are below or in the section they represent.
 
-    static PositionVoltage posControl = new PositionVoltage(0);
-    static VelocityVoltage velControl = new VelocityVoltage(0);
-    static TalonFX PivotMotor = new TalonFX(CLIMBER_RIGHT_MOTOR);
-    static TalonFX RollerMotor = new TalonFX(CLIMBER_LEFT_MOTOR);
-    static TalonFX VacuumMotor = new TalonFX(CLIMBER_TOP_MOTOR);
-    //creating all instances of objects that are used in the code
-
-    //FYI ALL RECORDINGS ARE CONTAINED WITHIN THEIR RESPECTIVE TRANSITIONS INSTEAD OF THEIR OWN SEPARATE CLASS
-    public void transitionToActivated() {
-        PivotMotor.setControl(posControl.withPosition(Degrees.of(90)));
-        RollerMotor.setControl(posControl.withPosition(Degrees.of(90)));
-        VacuumMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(6)));
-        Logger.recordOutput("Arm.State", 90);
- }
