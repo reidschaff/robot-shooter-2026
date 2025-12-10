@@ -32,7 +32,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static org.tahomarobotics.robot.RobotMap.*;
 
-public class Comands extends SubsystemBase {
+public class Commands extends SubsystemBase {
 
 
     static PositionVoltage posControl = new PositionVoltage(0);
