@@ -42,12 +42,21 @@ public class Comands extends SubsystemBase {
     static TalonFX Passthroughmotor = new TalonFX(PASSTHROUGH_MOTOR);
     public void Collecting(){
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(45)));
-        FlywheelMotor.setControl(posControl.withPosition(Degrees.of(300)));
+        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(300)));
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
     }
-
-
-//Drive RT - Spin flywheel motor to 300 RPS and run passthrough motor clockwise to feed piece into shooter
+    public void FIRE () {
+        Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
+        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));    }
+public void angle90 (){
+    Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
+    FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
+    }
+    public void angle135 (){
+        Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
+        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
+    }
+    //Drive RT - Spin flywheel motor to 300 RPS and run passthrough motor clockwise to feed piece into shooter
 
 
 
