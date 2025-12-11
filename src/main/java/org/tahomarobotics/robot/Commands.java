@@ -34,40 +34,40 @@ import static org.tahomarobotics.robot.RobotMap.*;
 
 public class Commands extends SubsystemBase {
 
+
     static PositionVoltage posControl = new PositionVoltage(0);
     static VelocityVoltage velControl = new VelocityVoltage(0);
-    static TalonFX PivotMotor = new TalonFX(PIVOT_MOTOR);
+    static TalonFX Pivotmotor = new TalonFX(PIVOT_MOTOR);
     static TalonFX FlywheelMotor = new TalonFX(FLYWHEEL_MOTOR);
-    static TalonFX PassthroughMotor = new TalonFX(PASSTHROUGH_MOTOR);
+    static TalonFX Passthroughmotor = new TalonFX(PASSTHROUGH_MOTOR);
     public void Collecting(){
-        PivotMotor.setControl(posControl.withPosition(Degrees.of(45)));
+        Pivotmotor.setControl(posControl.withPosition(Degrees.of(45)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(300)));
-        PassthroughMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
+        Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
         Logger.recordOutput("Pivot.angle",45);
         Logger.recordOutput("FlywheelMotor.SPEED",300);
         Logger.recordOutput("PassthroughMotor.SPEED",-50);
     }
     public void FIRE () {
-        PassthroughMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
+        Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
         Logger.recordOutput("PassthroughMotor.SPEED",50);
         Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
 public void angle90 (){
-    PivotMotor.setControl(posControl.withPosition(Degrees.of(90)));
+    Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
     FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
     Logger.recordOutput("Pivot.angle",90);
     Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
     public void angle135 (){
-        PivotMotor.setControl(posControl.withPosition(Degrees.of(135)));
+        Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
         Logger.recordOutput("Pivot.angle",135);
         Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
-    public void angle115 () {
-        PivotMotor.setControl(posControl.withPosition(Degrees.of(115)));
-        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
-        Logger.recordOutput("Pivot.angle", 115);
-        Logger.recordOutput("FlywheelMotor.SPEED", -300);
-    }}
+}
+
+
+
+
