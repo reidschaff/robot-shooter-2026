@@ -25,14 +25,13 @@ package org.tahomarobotics.robot;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static org.tahomarobotics.robot.RobotMap.*;
 
-public class Commands extends SubsystemBase {
+public class Commands {
     static PositionVoltage posControl = new PositionVoltage(0);
     static VelocityVoltage velControl = new VelocityVoltage(0);
     static TalonFX Pivotmotor = new TalonFX(PIVOT_MOTOR);
