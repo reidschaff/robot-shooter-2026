@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot.shooter;
+package org.tahomarobotics.robot;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
