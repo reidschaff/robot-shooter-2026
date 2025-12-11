@@ -25,4 +25,6 @@ package org.tahomarobotics.robot;
 public class ShooterConstants {
     public static final int PIVOT_LIMIT_MIN = 45;
     public static final int PIVOT_LIMIT_MAX = 135;
+
+    public static final int FLYWHEEL_SPEED = 300;
 }
