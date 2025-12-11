@@ -65,9 +65,9 @@ public void angle90 (){
         Logger.recordOutput("Pivot.angle",135);
         Logger.recordOutput("FlywheelMotor.SPEED",-300);
     }
-    public void angle115 (){
+    public void angle115 () {
         PivotMotor.setControl(posControl.withPosition(Degrees.of(115)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-300)));
-        Logger.recordOutput("Pivot.angle",115);
-        Logger.recordOutput("FlywheelMotor.SPEED",-300);
-}
+        Logger.recordOutput("Pivot.angle", 115);
+        Logger.recordOutput("FlywheelMotor.SPEED", -300);
+    }}
