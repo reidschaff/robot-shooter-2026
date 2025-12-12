@@ -64,19 +64,19 @@ public class ShooterCommands {
         Logger.recordOutput("Robot.State","angle90");
     }
 
-    public static void angle135() {
-        Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
-        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
-        Logger.recordOutput("Pivot.angle", 135);
-        Logger.recordOutput("FlywheelMotor.SPEED", -300);
-        Logger.recordOutput("Robot.State","angle135");
-    }
-
     public static void angle115() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(115)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
         Logger.recordOutput("Pivot.angle", 115);
         Logger.recordOutput("FlywheelMotor.SPEED", -300);
         Logger.recordOutput("Robot.State","angle115");
+    }
+
+    public static void angle135() {
+        Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
+        FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
+        Logger.recordOutput("Pivot.angle", 135);
+        Logger.recordOutput("FlywheelMotor.SPEED", -300);
+        Logger.recordOutput("Robot.State","angle135");
     }
 }
