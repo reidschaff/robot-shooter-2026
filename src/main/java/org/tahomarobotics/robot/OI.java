@@ -24,8 +24,10 @@ package org.tahomarobotics.robot;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.tahomarobotics.robot.shooter.Shooter;
+import org.tahomarobotics.robot.shooter.ShooterCommands;
 
 public class OI {
     private final Shooter shooter = Shooter.getInstance();
@@ -53,7 +55,7 @@ public class OI {
     // -- Bindings --
 
     public void configureControllerBindings() {
-      //  controller.rightTrigger().onTrue()
+      controller.rightTrigger().onTrue(Commands.runOnce(ShooterCommands::angle135));
     }
 
     public void configureLessImportantControllerBindings() {
