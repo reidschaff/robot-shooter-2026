@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.shooter;
 
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -31,7 +31,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static org.tahomarobotics.robot.RobotMap.*;
 
-public class Commands {
+public class ShooterCommands {
     static PositionVoltage posControl = new PositionVoltage(0);
     static VelocityVoltage velControl = new VelocityVoltage(0);
     static TalonFX Pivotmotor = new TalonFX(PIVOT_MOTOR);

@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.shooter;
 
 public class ShooterConstants {
     public static final int PIVOT_LIMIT_MIN = 45;
