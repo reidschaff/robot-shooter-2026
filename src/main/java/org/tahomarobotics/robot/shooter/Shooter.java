@@ -24,10 +24,13 @@ package org.tahomarobotics.robot.shooter;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Shooter extends SubsystemBase {
+public class Shooter implements SubsystemBase {
     private static final Shooter INSTANCE = new Shooter();
 
     public static Shooter getInstance() {
         return INSTANCE;
     }
+
+    @Override
+    public void periodic() {}
 }
