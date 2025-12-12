@@ -55,8 +55,7 @@ public class OI {
     // -- Bindings --
 
     public void configureControllerBindings() {
-      controller.a().onTrue(Commands.runOnce(ShooterCommands::Collecting));
-        controller.b().onTrue(Commands.runOnce(ShooterCommands::Collecting));
+      controller.rightTrigger().onTrue(Commands.runOnce(ShooterCommands::Collecting));
     }
 
     public void configureLessImportantControllerBindings() {
