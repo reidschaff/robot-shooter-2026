@@ -42,7 +42,7 @@ public class ShooterCommands {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(45)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(ShooterConstants.FLYWHEEL_SPEED)));
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
-        Logger.recordOutput("Pivot.angle", 45);
+        Logger.recordOutput("Shooter.angle", 45);
         Logger.recordOutput("FlywheelMotor.SPEED", 300);
         Logger.recordOutput("PassthroughMotor.SPEED", -50);
         Logger.recordOutput("Robot.State","Collecting");
@@ -59,7 +59,7 @@ public class ShooterCommands {
     public static void angle90() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
-        Logger.recordOutput("Pivot.angle", 90);
+        Logger.recordOutput("Shooter.angle", 90);
         Logger.recordOutput("FlywheelMotor.SPEED", -300);
         Logger.recordOutput("Robot.State","angle90");
     }
@@ -67,7 +67,7 @@ public class ShooterCommands {
     public static void angle115() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(115)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
-        Logger.recordOutput("Pivot.angle", 115);
+        Logger.recordOutput("Shooter.angle", 115);
         Logger.recordOutput("FlywheelMotor.SPEED", -300);
         Logger.recordOutput("Robot.State","angle115");
     }
@@ -75,7 +75,7 @@ public class ShooterCommands {
     public static void angle135() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(135)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-ShooterConstants.FLYWHEEL_SPEED)));
-        Logger.recordOutput("Pivot.angle", 135);
+        Logger.recordOutput("Shooter.angle", 135);
         Logger.recordOutput("FlywheelMotor.SPEED", -300);
         Logger.recordOutput("Robot.State","angle135");
     }
