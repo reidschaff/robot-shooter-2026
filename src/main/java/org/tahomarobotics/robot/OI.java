@@ -56,6 +56,9 @@ public class OI {
 
     public void configureControllerBindings() {
       controller.rightTrigger().onTrue(Commands.runOnce(ShooterCommands::Collecting));
+
+      // added for testing
+      controller.leftTrigger().onTrue(Commands.runOnce(ShooterCommands::angleMax));
     }
 
     public void configureLessImportantControllerBindings() {
