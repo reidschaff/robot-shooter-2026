@@ -25,6 +25,7 @@ package org.tahomarobotics.robot.shooter;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -32,7 +33,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static org.tahomarobotics.robot.RobotMap.*;
 import static org.tahomarobotics.robot.shooter.ShooterConstants.*;
 
-public class ShooterCommands {
+public class ShooterCommands extends SubsystemBase {
     static PositionVoltage posControl = new PositionVoltage(0);
     static VelocityVoltage velControl = new VelocityVoltage(0);
     static TalonFX Pivotmotor = new TalonFX(PIVOT_MOTOR);
@@ -43,7 +44,7 @@ public class ShooterCommands {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(PIVOT_LIMIT_MIN)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(FLYWHEEL_SPEED)));
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
-        Logger.recordOutput("Shooter.angle", 45);
+        Logger.recordOutput("Shooter.angle", Degrees.of(45));
         Logger.recordOutput("FlywheelMotor.SPEED", FLYWHEEL_SPEED);
         Logger.recordOutput("PassthroughMotor.SPEED", -50);
         Logger.recordOutput("Robot.State","Collecting");
@@ -51,14 +52,14 @@ public class ShooterCommands {
 
     public static void moveToAngle(double angle) {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(angle)));
-        Logger.recordOutput("Shooter.angle", angle);
+        Logger.recordOutput("Shooter.angle", Degrees.of(angle));
         Logger.recordOutput("Robot.State","angle" + angle);
     }
 
     public static void FIRE() {
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("PassthroughMotor.SPEED", 50);
+        Logger.recordOutput("PassthroughMotor.SPEED", Degrees.of(50));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","FIRE");
     }
@@ -66,7 +67,7 @@ public class ShooterCommands {
     public static void angle90() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", 90);
+        Logger.recordOutput("Shooter.angle", Degrees.of(90));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angle90");
     }
@@ -74,7 +75,7 @@ public class ShooterCommands {
     public static void angle115() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(115)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", 115);
+        Logger.recordOutput("Shooter.angle", Degrees.of(115));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angle115");
     }
@@ -82,7 +83,7 @@ public class ShooterCommands {
     public static void angleMax() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(PIVOT_LIMIT_MAX)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", PIVOT_LIMIT_MAX);
+        Logger.recordOutput("Shooter.angle", Degrees.of(PIVOT_LIMIT_MAX));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angleMax");
     }
