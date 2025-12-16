@@ -44,7 +44,7 @@ public class ShooterCommands extends SubsystemBase {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(PIVOT_LIMIT_MIN)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(FLYWHEEL_SPEED)));
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-50)));
-        Logger.recordOutput("Shooter.angle", Degrees.of(45));
+        Logger.recordOutput("Shooter.angle", Double.valueOf(45));
         Logger.recordOutput("FlywheelMotor.SPEED", FLYWHEEL_SPEED);
         Logger.recordOutput("PassthroughMotor.SPEED", -50);
         Logger.recordOutput("Robot.State","Collecting");
@@ -52,7 +52,7 @@ public class ShooterCommands extends SubsystemBase {
 
     public static void moveToAngle(double angle) {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(angle)));
-        Logger.recordOutput("Shooter.angle", Degrees.of(angle));
+        Logger.recordOutput("Shooter.angle", angle);
         Logger.recordOutput("Robot.State","angle" + angle);
     }
 
@@ -67,7 +67,7 @@ public class ShooterCommands extends SubsystemBase {
     public static void angle90() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(90)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", Degrees.of(90));
+        Logger.recordOutput("Shooter.angle", Double.valueOf(90));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angle90");
     }
@@ -75,7 +75,7 @@ public class ShooterCommands extends SubsystemBase {
     public static void angle115() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(115)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", Degrees.of(115));
+        Logger.recordOutput("Shooter.angle", Double.valueOf(115));
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angle115");
     }
@@ -83,7 +83,7 @@ public class ShooterCommands extends SubsystemBase {
     public static void angleMax() {
         Pivotmotor.setControl(posControl.withPosition(Degrees.of(PIVOT_LIMIT_MAX)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
-        Logger.recordOutput("Shooter.angle", Degrees.of(PIVOT_LIMIT_MAX));
+        Logger.recordOutput("Shooter.angle", PIVOT_LIMIT_MAX);
         Logger.recordOutput("FlywheelMotor.SPEED", -FLYWHEEL_SPEED);
         Logger.recordOutput("Robot.State","angleMax");
     }
