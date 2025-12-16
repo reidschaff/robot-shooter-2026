@@ -49,6 +49,12 @@ public class ShooterCommands {
         Logger.recordOutput("Robot.State","Collecting");
     }
 
+    public static void moveToAngle(double angle) {
+        Pivotmotor.setControl(posControl.withPosition(Degrees.of(angle)));
+        Logger.recordOutput("Shooter.angle", angle);
+        Logger.recordOutput("Robot.State","angle" + angle);
+    }
+
     public static void FIRE() {
         Passthroughmotor.setControl(velControl.withVelocity(RotationsPerSecond.of(50)));
         FlywheelMotor.setControl(velControl.withVelocity(RotationsPerSecond.of(-FLYWHEEL_SPEED)));
